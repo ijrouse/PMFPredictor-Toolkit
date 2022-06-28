@@ -1,0 +1,9 @@
+*.png
+*.acpype
+*.mol2
+oldfiles
+logs
+predicted_pmfs
+Datasets/TrainingData.csv
+AllPMFs
+AllPMFsRegularised

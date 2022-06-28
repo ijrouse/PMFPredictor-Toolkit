@@ -1,4 +1,5 @@
 #ID,shape,EnergyAt2A,SkipAlign,PMFAlignTarget,SkipPMF,source
+CdSeWurtzite2-10,plane,35,0,25,0,0
 CNT15,cylinder,35,0,35,0,0
 TiO2-ana-100,plane,35,0,35,0,0
 CNT15-COOH-30,cylinder,35,0,35,0,0
@@ -18,7 +19,6 @@ grapheneoxide,plane,35,0,35,0,0
 redgrapheneoxide,plane,35,0,35,0,0
 C-amorph-2,plane,35,0,7.5,0,0
 Fe2O3-001O,plane,35,0,35,0,0
-CdSeWurtzite2-10,plane,35,0,25,0,0
 SiO2-Quartz,plane,35,0,10,0,0
 SiO2-Amorphous,plane,35,0,10,0,0
 TiO2-rut-110,plane,35,0,35,0,0

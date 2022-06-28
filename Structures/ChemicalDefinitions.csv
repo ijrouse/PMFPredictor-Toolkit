@@ -1,45 +1,45 @@
 #ID,SMILES,formal charge,comment
-ALASCA,C,0.0,alanine side chain
-ARGSCA,CCCNC(N)=[NH2+],1,arg side chain
-ASNSCA,CC(N)=O,0, asn side chain
-ASPSCA,CC(=O)[O-],-1,asp side chain
-CYSSCA,CS,0,cys side chain
-GLNSCA,CCC(N)=O,0,gln side chain
-GLUSCA,CCC(=O)[O-],-1, glu side chain
-HIDSCA,Cc1cnc[nH]1,0,HID side chain
-HIESCA,Cc1c[nH]cn1,0,HIE side chain
-ILESCA,CCCC,0,ILE side chain
-LEUSCA,CC(C)C,0,LEU side chain
-LYSSCA,CCCC[NH3+],1,LYS side chain
-METSCA,CCSC,0,MET side chain
-PHESCA,Cc1ccccc1,0,PHE side chain
-SERSCA,CO,0,SER side chain
-THRSCA,CCO,0,THR side chain
-TRPSCA,Cc1c[nH]c2ccccc12,0,TRP side chain
-TYRSCA,Cc1ccc(O)cc1,0,TYR side chain
-VALSCA,CCC,0,VAL side chain
-HIPSCA,Cc1c[nH]c[nH+]1,1, protonated HIS side chain
-CHL,C[N+](C)(C)C,1, choline
-ETA,C[NH3+],1,ethanolamine
-PHO,COP(=O)([O-])OC,-1,phosphate
-EST,COC(C)=O,0,ester
-DGL,OCC1OC(O)C(O)C(O)C1O,0,d-glucose
-PROSCA,C1CC1,0,three-membered ring
-CYMSCA,C[S-],-1,charged cysteine
-DMEP,COP(=O)([O-])OC,-1,phosphate
-NC4,C[N+](C)(C)C,1,choline
-MAS,COC(C)=O,0,ester
-HSPSCA,Cc1c[nH]c[nH+]1,1,protonated HIS side chain
-MAMM,C[NH3+],1,ethanolamine
+ALASCA-JS,C,0.0,alanine side chain
+ARGSCA-JS,CCCNC(N)=[NH2+],1,arg side chain
+ASNSCA-JS,CC(N)=O,0, asn side chain
+ASPSCA-JS,CC(=O)[O-],-1,asp side chain
+CYSSCA-JS,CS,0,cys side chain
+GLNSCA-JS,CCC(N)=O,0,gln side chain
+GLUSCA-JS,CCC(=O)[O-],-1, glu side chain
+HIDSCA-JS,Cc1cnc[nH]1,0,HID side chain
+HIESCA-JS,Cc1c[nH]cn1,0,HIE side chain
+ILESCA-JS,CCCC,0,ILE side chain
+LEUSCA-JS,CC(C)C,0,LEU side chain
+LYSSCA-JS,CCCC[NH3+],1,LYS side chain
+METSCA-JS,CCSC,0,MET side chain
+PHESCA-JS,Cc1ccccc1,0,PHE side chain
+SERSCA-JS,CO,0,SER side chain
+THRSCA-JS,CCO,0,THR side chain
+TRPSCA-JS,Cc1c[nH]c2ccccc12,0,TRP side chain
+TYRSCA-JS,Cc1ccc(O)cc1,0,TYR side chain
+VALSCA-JS,CCC,0,VAL side chain
+HIPSCA-JS,Cc1c[nH]c[nH+]1,1, protonated HIS side chain
+CHL-JS,C[N+](C)(C)C,1, choline
+ETA-JS,C[NH3+],1,ethanolamine
+PHO-JS,COP(=O)([O-])OC,-1,phosphate
+EST-JS,COC(C)=O,0,ester
+DGL-JS,OCC1OC(O)C(O)C(O)C1O,0,d-glucose
+PROSCA-JS,C1CC1,0,three-membered ring
+CYMSCA-JS,C[S-],-1,charged cysteine
+DMEP-JS,COP(=O)([O-])OC,-1,phosphate
+NC4-JS,C[N+](C)(C)C,1,choline
+MAS-JS,COC(C)=O,0,ester
+HSPSCA-JS,Cc1c[nH]c[nH+]1,1,protonated HIS side chain
+MAMM-JS,C[NH3+],1,ethanolamine
 GLY,NCC(=O)O,0,glycine
 PRO,O=C(O)C1CCCN1,0,proline
-GANSCA,CCC(=O)O,0,protonated GLU side chain
-GLUPSCA,CCC(=O)O,0,protonated GLU side chain
-ASPPSCA,CC(=O)O,0,protonated ASP side chain
-AFUC,CC1OC(O)C(O)C(O)C1O,0,AFUC
-BGLCNA,CC(=O)NC1C(O)OC(CO)C(O)C1O,0,BGLCNA
-AMAN,OCC1OC(O)C(O)C(O)C1O,0,AMAN
-BGLC,OCC1OC(O)C(O)C(O)C1O,0,BGLC
+GANSCA-JS,CCC(=O)O,0,protonated GLU side chain
+GLUPSCA-JS,CCC(=O)O,0,protonated GLU side chain
+ASPPSCA-JS,CC(=O)O,0,protonated ASP side chain
+AFUC-JS,CC1OC(O)C(O)C(O)C1O,0,AFUC
+BGLCNA-JS,CC(=O)NC1C(O)OC(CO)C(O)C1O,0,BGLCNA
+AMAN-JS,OCC1OC(O)C(O)C(O)C1O,0,AMAN
+BGLC-JS,OCC1OC(O)C(O)C(O)C1O,0,BGLC
 ETHANE-AC,CC,0,ethane
 PROPANE-AC,CCC,0,propane
 ETHENE-AC,C=C,0,ethene
@@ -47,6 +47,47 @@ PROPENE-AC,C=CC,0,propene
 BUTENE1-AC,C=CCC,0,but-1-ene
 BUTENE2-AC,CC=CC,0,but-2-ene
 BUTENE13-AC,C=CC=C,0,but-1<COMMA>3-ene
+ALASCA-AC,C,0.0,alanine side chain
+ARGSCA-AC,CCCNC(N)=[NH2+],1,arg side chain
+ASNSCA-AC,CC(N)=O,0, asn side chain
+ASPSCA-AC,CC(=O)[O-],-1,asp side chain
+CYSSCA-AC,CS,0,cys side chain
+GLNSCA-AC,CCC(N)=O,0,gln side chain
+GLUSCA-AC,CCC(=O)[O-],-1, glu side chain
+HIDSCA-AC,Cc1cnc[nH]1,0,HID side chain
+HIESCA-AC,Cc1c[nH]cn1,0,HIE side chain
+ILESCA-AC,CCCC,0,ILE side chain
+LEUSCA-AC,CC(C)C,0,LEU side chain
+LYSSCA-AC,CCCC[NH3+],1,LYS side chain
+METSCA-AC,CCSC,0,MET side chain
+PHESCA-AC,Cc1ccccc1,0,PHE side chain
+SERSCA-AC,CO,0,SER side chain
+THRSCA-AC,CCO,0,THR side chain
+TRPSCA-AC,Cc1c[nH]c2ccccc12,0,TRP side chain
+TYRSCA-AC,Cc1ccc(O)cc1,0,TYR side chain
+VALSCA-AC,CCC,0,VAL side chain
+HIPSCA-AC,Cc1c[nH]c[nH+]1,1, protonated HIS side chain
+CHL-AC,C[N+](C)(C)C,1, choline
+ETA-AC,C[NH3+],1,ethanolamine
+PHO-AC,COP(=O)([O-])OC,-1,phosphate
+EST-AC,COC(C)=O,0,ester
+DGL-AC,OCC1OC(O)C(O)C(O)C1O,0,d-glucose
+PROSCA-AC,C1CC1,0,three-membered ring
+CYMSCA-AC,C[S-],-1,charged cysteine
+DMEP-AC,COP(=O)([O-])OC,-1,phosphate
+NC4-AC,C[N+](C)(C)C,1,choline
+MAS-AC,COC(C)=O,0,ester
+HSPSCA-AC,Cc1c[nH]c[nH+]1,1,protonated HIS side chain
+MAMM-AC,C[NH3+],1,ethanolamine
+GLY-AC,NCC(=O)O,0,glycine
+PRO-AC,O=C(O)C1CCCN1,0,proline
+GANSCA-AC,CCC(=O)O,0,protonated GLU side chain
+GLUPSCA-AC,CCC(=O)O,0,protonated GLU side chain
+ASPPSCA-AC,CC(=O)O,0,protonated ASP side chain
+AFUC-AC,CC1OC(O)C(O)C(O)C1O,0,AFUC
+BGLCNA-AC,CC(=O)NC1C(O)OC(CO)C(O)C1O,0,BGLCNA
+AMAN-AC,OCC1OC(O)C(O)C(O)C1O,0,AMAN
+BGLC-AC,OCC1OC(O)C(O)C(O)C1O,0,BGLC
 CS-3-AC,CC(CN)O,0,1-amino-2-propanol
 CS-173-AC,CC(=N)O,0,Acetamide
 CS-210-AC,CC(=O)CN,0,Aminoacetone
