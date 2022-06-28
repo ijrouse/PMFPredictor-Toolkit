@@ -7,7 +7,61 @@ targetList = [
 ["PROPENE-AC","C=CC","0"],
 ["BUTENE1-AC","C=CCC","0"],
 ["BUTENE2-AC","CC=CC","0"],
-["BUTENE13-AC","C=CC=C","0"]
+["BUTENE13-AC","C=CC=C","0"],
+["ALASCA-AC","C","0"],
+["ARGSCA-AC","CCCNC(N)=[NH2+]","1"],
+["ASNSCA-AC","CC(N)=O","0"],
+["ASPSCA-AC","CC(=O)[O-]","-1"],
+["CYSSCA-AC","CS","0"],
+["GLNSCA-AC","CCC(N)=O","0"],
+["GLUSCA-AC","CCC(=O)[O-]","-1"],
+["HIDSCA-AC","Cc1cnc[nH]1","0"],
+["HIESCA-AC","Cc1c[nH]cn1","0"],
+["ILESCA-AC","CCCC","0"],
+["LEUSCA-AC","CC(C)C","0"],
+["LYSSCA-AC","CCCC[NH3+]","1"],
+["METSCA-AC","CCSC","0"],
+["PHESCA-AC","Cc1ccccc1","0"],
+["SERSCA-AC","CO","0"],
+["THRSCA-AC","CCO","0"],
+["TRPSCA-AC","Cc1c[nH]c2ccccc12","0"],
+["TYRSCA-AC","Cc1ccc(O)cc1","0"],
+["VALSCA-AC","CCC","0"],
+["HIPSCA-AC","Cc1c[nH]c[nH+]1","1"],
+["CHL-AC","C[N+](C)(C)C","1"],
+["ETA-AC","C[NH3+]","1"],
+["PHO-AC","COP(=O)([O-])OC","-1"],
+["EST-AC","COC(C)=O","0"],
+["DGL-AC","OCC1OC(O)C(O)C(O)C1O","0"],
+["PROSCA-AC","C1CC1","0"],
+["CYMSCA-AC","C[S-]","-1"],
+["DMEP-AC","COP(=O)([O-])OC","-1"],
+["NC4-AC","C[N+](C)(C)C","1"],
+["MAS-AC","COC(C)=O","0"],
+["HSPSCA-AC","Cc1c[nH]c[nH+]1","1"],
+["MAMM-AC","C[NH3+]","1"],
+["GLY-AC","NCC(=O)O","0"],
+["PRO-AC","O=C(O)C1CCCN1","0"],
+["GANSCA-AC","CCC(=O)O","0"],
+["GLUPSCA-AC","CCC(=O)O","0"],
+["ASPPSCA-AC","CC(=O)O","0"],
+["AFUC-AC","CC1OC(O)C(O)C(O)C1O","0"],
+["BGLCNA-AC","CC(=O)NC1C(O)OC(CO)C(O)C1O","0"],
+["AMAN-AC","OCC1OC(O)C(O)C(O)C1O","0"],
+["BGLC-AC","OCC1OC(O)C(O)C(O)C1O","0"]
+
+
+
+
+
+
+
+
+
+
+
+
+
 ]
 #CS-3-AC,CC(CN)O,0,1-amino-2-propanol,
 #CS-173-AC,CC(=N)O,0,Acetamide,
@@ -19,7 +73,7 @@ for line in targetFile:
     chemID = lineTerms[0]
     smiles = lineTerms[1]
     netcharge = lineTerms[2]
-    targetList.append( [chemID,smiles,netcharge])
+    #targetList.append( [chemID,smiles,netcharge])
 
 print(targetList)
 

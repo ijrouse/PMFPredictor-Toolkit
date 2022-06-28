@@ -48,9 +48,11 @@ def HGECoeffs( inputPotential, r0Val, nmax):
     return hgeCoeffRes
 
 #define parameters used for the free energy calculation
-temperature = 300
+temperature = 300.0
 probeEpsilon = 0.3598
 probeSigma = 0.339
+dielectricConst = 80 
+
 
 #point probes. the first must be left unchanged because this is used to determine the surface level.
 #name, sigma,epsilon,   charge
@@ -70,14 +72,14 @@ waterProbe =  [
 
 
 
-conversionFactor = ( 8.314/1000) * temperature
+conversionFactor = ( 8.314/1000.0) * temperature
 
 inputFolder = "Structures/Surfaces"
 outputFolder = "SurfacePotentials"
 os.makedirs(outputFolder, exist_ok=True)
 debyeLength = 0.7
 avogadroNum = 6.022e23
-electroToKJMol =  1.4399 * 1.6e-19 *avogadroNum/1000.0
+electroToKJMol =  (1.4399/dielectricConst) * 1.6e-19 *avogadroNum/1000.0
 print("Electric to kJ/mol conversion: ",electroToKJMol)
 #1.4399 arises from (1/4 pi eps0) * 1 elementary charge/1nm to give scaling factor to V , 1.6e-19 is the second elementary charge to give an energy in J, multiply by atoms/mol , divide by 1000 to get kJ/mol
 #this is quite a large number! 
@@ -90,7 +92,7 @@ alignPointDist = 0.2
 pmfAlignEnergyDefault = 35.0
 #input data has the form
 #label, shape,  energy alignment value, skip energy alignment,   manual energy point at which to align the PMF, skip PMF alignment
-offsetResultFile = open("Datasets/SurfaceOffsetData.csv","w")
+offsetResultFile = open("Datasets/SurfaceOffsetDataDebug.csv","w")
 offsetResultFile.write("Material,ZeroLevelOffset[nm],FEOffset[nm],AlanineOffset[nm]\n")
 
 
@@ -128,7 +130,7 @@ for surfaceTarget in surfaceTargetSet:
     print("Loaded ", len(atomNumericData), "atoms from file")
     alaPMFData = []
     try:
-        pmfText = open("AllPMFsRegularised/"+surfaceName+"_ALASCA.dat" , "r")
+        pmfText = open("AllPMFsRegularisedOldNames/"+surfaceName+"_ALASCA.dat" , "r")
         for line in pmfText:
             if line[0] == "#":
                 continue
@@ -158,8 +160,8 @@ for surfaceTarget in surfaceTargetSet:
             atomNumericData[:,1] = atomNumericData[:,1] - np.sum(atomNumericData[:,1] * atomNumericData[:,4])/np.sum(atomNumericData[:,4])
             atomNumericData[:,2] = atomNumericData[:,2] - zeroLevelOffset  #zero level for the purpose of generating the potential to make sure we start "inside" the NP, this is recorded for archival purposes 
         newZCOM = np.sum(atomNumericData[:,2] * atomNumericData[:,4])/np.sum(atomNumericData[:,4])
-        print(newZCOM)
-        rRange =r0Start + np.arange(newZCOM, 1.5, 0.005)
+        #print(newZCOM)
+        rRange =r0Start + np.arange(newZCOM, 2.0, 0.005) #actual resolution  0.005
         if surfaceType == "cylinder":
             numc1=16
             numc2=23
@@ -199,37 +201,45 @@ for surfaceTarget in surfaceTargetSet:
                     atomDist = np.sqrt(   ( c1grid - atomNumericData[i,0])**2 + (c2grid - atomNumericData[i,1])**2 + (r - atomNumericData[i,2])**2  )
                     distList.append(atomDist)
             distArray = np.array(distList)
-            electricContributions = chargeBroadcast * np.exp(-distArray/debyeLength) / distArray
+            electricContributions = chargeBroadcast  / distArray
             scaledDists = sigmaBroadcast/distArray 
             allContributions = np.sum( 4*epsBroadcast*( scaledDists**12 - scaledDists**6) , axis=0)
             ones = 1 + np.zeros_like(allContributions)
-            freeEnergy=-conversionFactor * np.log( np.sum(   np.exp( -allContributions / conversionFactor) )  / np.sum(ones) )
-            electrostatic = np.sum( electricContributions * np.exp( -allContributions / conversionFactor) ) / np.sum(np.exp( -allContributions / conversionFactor))
+            #print(ones)
+            #freeEnergy=-conversionFactor * np.log( np.sum(   np.exp( -allContributions / conversionFactor) )  / np.sum(ones) )
+            #electrostatic = np.sum( electricContributions * np.exp( -allContributions / conversionFactor) ) / np.sum(np.exp( -allContributions / conversionFactor))
             probeFESet = []
             foundInf = 0
             allInf = 1
+            cInf = 0
             for probe in pointProbes:  ##name, sigma,epsilon,   charge
                 epsCombined = np.sqrt(epsBroadcast * probe[2])
                 sigmaCombined = 0.5*(sigmaBroadcast + probe[1])
+                #print(electroToKJMol*probe[3]*electricContributions )
                 electrostaticPotential = np.sum( electroToKJMol*probe[3]*electricContributions   , axis=0)
                 scaledDists = sigmaCombined/distArray 
-                ljPotential = np.sum( 4 * epsCombined * (scaledDists**12 - scaledDists**6 ), axis=0)
+                ljPotential = np.sum( 4 * epsCombined * (scaledDists**12 - scaledDists**6 ), axis=0) #sum over atoms
+                #print( (4 * epsCombined * (scaledDists**12 - scaledDists**6 )).shape, (electroToKJMol*probe[3]*electricContributions).shape)
+                #print(probe)
+                #print("LJ")
+                #print(ljPotential)
+                #print("Electro")
+                #print(electrostaticPotential)
+
                 totalPotential = electrostaticPotential + ljPotential
+                #print(np.sum(totalPotential))
+                #print(r, np.sum(   np.exp( -totalPotential / conversionFactor) ) , -conversionFactor * np.log( np.sum(   np.exp( -totalPotential / conversionFactor) )  / np.sum(ones)))
                 probeFreeEnergy=-conversionFactor * np.log( np.sum(   np.exp( -totalPotential / conversionFactor) )  / np.sum(ones) )
+                #print(r, probe, probeFreeEnergy)
                 probeFESet.append(probeFreeEnergy)
                 #print( r, probe[0], probeFreeEnergy)
-                if not np.isfinite(probeFreeEnergy):
-                    foundInf = 1
-                else:
-                    allInf = 0
-            resList.append( [r,r-r0Start, r-r0Start ] + probeFESet)
-            if foundInf == 1:
+            if not np.isfinite( probeFESet[0]):
                 lastInfPoint = r
-            if allInf == 1:
-                lastAllInfPoint = r
+            resList.append( [r,r-r0Start, r-r0Start ] + probeFESet)
+
                 
         print("Starting water")
-        rRangeWater =r0Start + np.arange(lastAllInfPoint-r0Start, 1.5,  0.025)        
+        rRangeWater =r0Start + np.arange(lastInfPoint-r0Start, 2.0,  0.01 ) #actual resolution 0.01       
         for r in rRangeWater:            
             runningNumerator = 0
             runningDenominator = 0
@@ -251,7 +261,7 @@ for surfaceTarget in surfaceTargetSet:
                                 atomDist = np.sqrt(   ( c1grid + ax - atomNumericData[i,0])**2 + (c2grid + ay - atomNumericData[i,1])**2 + (r + az - atomNumericData[i,2])**2  )
                                 distList.append(atomDist)
                         distArray = np.array(distList)
-                        electricContributions = np.sum( chargeBroadcast * np.exp(-distArray/debyeLength) / distArray , axis=0 )
+                        electricContributions = np.sum( chargeBroadcast  / distArray , axis=0 )
                         scaledDists = sigmaBroadcast/distArray 
                         ljContributions =  np.sum( 4*epsBroadcast*( scaledDists**12 - scaledDists**6) , axis=0)
                         allContributions += (electroToKJMol*atom[3]*electricContributions + ljContributions)

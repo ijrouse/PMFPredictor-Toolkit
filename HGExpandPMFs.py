@@ -30,7 +30,7 @@ def HGECoeffs( inputPotential, r0Val, nmax):
     for n in range(1,nmax+1):
         integrand = lambda x: potentialInterpolated(x) * HGEFunc(x, r0Actual, n)
         #hgeCoeff =  scipy.integrate.trapz( potentialUpscaled*HGEFunc( rRange,r0Actual, n),  rRange )
-        hgeCoeffGaussian = scipy.integrate.quadrature( integrand, rminVal, rmaxVal, maxiter=100)
+        hgeCoeffGaussian = scipy.integrate.quadrature( integrand, rminVal, rmaxVal, maxiter=200)
         hgeCoeffRes.append(hgeCoeffGaussian[0])
     #print(hgeCoeffRes)
     return hgeCoeffRes

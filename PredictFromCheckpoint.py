@@ -14,8 +14,10 @@ from tensorflow.strings import bytes_split
 from tensorflow.keras.utils import plot_model
 
 
-targetModel = "oddpotentialcoeffs11-june09-32c-predr0testing-predictr0"
-datasetAll= pd.read_csv("HGE16-MaterialChemicalCoefficientDescriptors_R0E0_june06.csv")
+#targetModel = "oddpotentialcoeffs11-june09-32c-predr0testing-predictr0"
+datasetAll= pd.read_csv("Datasets/TrainingData.csv")
+
+targetModel = "pmfpredict-june24-noucdweight-fast-predictE0"
 loadedModel = tf.keras.models.load_model("checkpoints/"+targetModel)
 
 varsetFile = open(targetModel+"_varset.txt","r")

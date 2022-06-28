@@ -16,49 +16,51 @@ import scipy.special as scspec
 import datetime
 
 
-targetModel = "june14-roughonly-predictr0"
+
+targetModel ="pmfpredict-june15-higherLR-evenlowerepsilon-lossweights-4lcfinal-coeff16-bn-mixing-lcstart-v2-predictE0"
+#targetModel = "june14-roughonly-predictr0"
 
 
 
 datasetAll= pd.read_csv("Datasets/TrainingData.csv")
-loadedModel = tf.keras.models.load_model("checkpoints/"+targetModel)
+loadedModel = tf.keras.models.load_model(targetModel+"/checkpoints/checkpoint-train")
 os.makedirs("predicted_pmfs/"+targetModel,exist_ok=True)
 
 UnitedAtomNames = {
-"ALASCA":"ALA",
-"ARGSCA":"ARG",
-"LYSSCA":"LYS",
-"HIDSCA":"HID",
-"HIESCA":"HIE",
-"ASPSCA":"ASP",
-"GLUSCA":"GLU",
-"SERSCA":"SER",
-"THRSCA":"THR",
-"ASNSCA":"ASN",
-"GLNSCA":"GLN",
-"CYSSCA":"CYS",
- "GLY":"GLY",
- "PRO":"PRO",
- "VALSCA":"VAL",
- "ILESCA":"ILE",
- "LEUSCA":"LEU",
- "METSCA":"MET",
- "PHESCA":"PHE",
- "TRYSCA":"TYR",
- "TRPSCA":"TRP",
- "HIPSCA":"HIP",
- "ETA":"ETA",
- "PHO":"PHO",
- "CHL":"CHL",
- "DGL":"DGL",
- "EST":"EST"
+"ALASCA-AC":"ALA",
+"ARGSCA-AC":"ARG",
+"LYSSCA-AC":"LYS",
+"HIDSCA-AC":"HID",
+"HIESCA-AC":"HIE",
+"ASPSCA-AC":"ASP",
+"GLUSCA-AC":"GLU",
+"SERSCA-AC":"SER",
+"THRSCA-AC":"THR",
+"ASNSCA-AC":"ASN",
+"GLNSCA-AC":"GLN",
+"CYSSCA-AC":"CYS",
+ "GLY-AC":"GLY",
+ "PRO-AC":"PRO",
+ "VALSCA-AC":"VAL",
+ "ILESCA-AC":"ILE",
+ "LEUSCA-AC":"LEU",
+ "METSCA-AC":"MET",
+ "PHESCA-AC":"PHE",
+ "TRYSCA-AC":"TYR",
+ "TRPSCA-AC":"TRP",
+ "HIPSCA-AC":"HIP",
+ "ETA-AC":"ETA",
+ "PHO-AC":"PHO",
+ "CHL-AC":"CHL",
+ "DGL-AC":"DGL",
+ "EST-AC":"EST"
 }
 
 
 
 #Write the training set predictions out
 
-varsetFile = open(targetModel+"_varset.txt","r")
+varsetFile = open(targetModel+"/varset.txt","r")
 aaVarSet = varsetFile.readline().strip().split(",")
 varsetFile.close()
 
@@ -100,7 +102,7 @@ for materialName in uniqueMaterials:
     os.makedirs( "predicted_pmfs/"+targetModel+"/allchemicals/"+materialName,exist_ok=True)
     os.makedirs( "predicted_pmfs/"+targetModel+"/UA-surface-predicted/"+materialName,exist_ok=True)
 
-loadedModel = tf.keras.models.load_model("checkpoints/"+targetModel)
+#loadedModel = tf.keras.models.load_model("checkpoints/"+targetModel)
 
 inputVariableFile = open(targetModel+"_varset.txt")
 inputVarSet = inputVariableFile.read().strip().split(",")
@@ -110,10 +112,16 @@ inputVariableFile.close()
 
 combinedDataset = pd.merge(targetMolecules,targetSurfaces,how="cross")
 combinedDataset["fittedE0"] = targetE0Val
+
+#combinedDataset["r0original"] = combinedDataset["r0"]
+#combinedDataset["r0"] = 
 #combinedDataset["rmin"] = combinedDataset["fljr0"] + 0.01
 #combinedDataset["rmin"].clip(lower = 0.2, inplace=True)
 #print(combinedDataset)
 
+def logSumMax( x):
+    return np.log(  np.sum(np.exp(x)))
+combinedDataset["r0"] = np.log(  np.exp(combinedDataset["ChemLJR0"] + np.exp(combinedDataset["SurfLJR0"]))
 
 aaVarSet =  inputVarSet
 predictionSetSingle =  ( np.array( loadedModel.predict([    combinedDataset[aaVarSet] ]  ,verbose=True ))[:,:,0] ).T

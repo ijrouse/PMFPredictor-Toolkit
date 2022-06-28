@@ -17,7 +17,7 @@ knownChems = chemicalCoefficientFile.readlines()
 for chemLine in knownChems:
     chemLineTerms = chemLine.strip().split(",")
     chemDict[chemLineTerms[0]] =chemLineTerms
-print(chemDict)
+#print(chemDict)
 chemicalCoefficientFile.close()
 
 surfaceCoefficientFile = open("Datasets/SurfacePotentialCoefficients.csv","r")
@@ -27,7 +27,7 @@ knownSurfaces = surfaceCoefficientFile.readlines()
 for surfaceLine in knownSurfaces:
     surfaceLineTerms = surfaceLine.strip().split(",")
     surfaceDict[surfaceLineTerms[0]] = surfaceLineTerms
-print(surfaceDict)
+#print(surfaceDict)
 surfaceCoefficientFile.close()
 
 
