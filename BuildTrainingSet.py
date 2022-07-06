@@ -31,13 +31,13 @@ for surfaceLine in knownSurfaces:
 surfaceCoefficientFile.close()
 
 
-pmfCoefficientFile = open("Datasets/PMFCoefficients.csv","r")
+pmfCoefficientFile = open("Datasets/PMFCoefficients-v2.csv","r")
 pmfHeader=pmfCoefficientFile.readline().strip().split(",")
 headerSet= [pmfHeader[0]]+[pmfHeader[1]]+  surfaceHeader[1:]+chemHeader[1:]+ pmfHeader[2:]
 
 targetE0Index = headerSet.index("TargetE0")
 fittedE0Index = headerSet.index("fittedE0")
-
+nmaxIndex = headerSet.index("NMaxBest")
 
 outputFile = open("Datasets/TrainingData.csv","w")
 
@@ -62,7 +62,8 @@ for line in pmfCoefficientFile:
     resSet = [lineTerms[0], lineTerms[1]]+   surfaceData[1:] + chemData[1:] + lineTerms[2:]
     fittedE0 = float(resSet[fittedE0Index])
     targetE0 = float(resSet[targetE0Index])
-    if np.sqrt( (fittedE0-targetE0)**2 ) < 10 and np.sqrt( (fittedE0-targetE0)**2 ) < 0.1 * targetE0 :
+    nmaxBest = float(resSet[nmaxIndex])
+    if np.sqrt( (fittedE0-targetE0)**2 ) < 2 and np.sqrt( (fittedE0-targetE0)**2 ) < 0.1 * targetE0 and nmaxBest > 15:
         #print(   ",".join(resSet) )
         outputFile.write( ",".join(resSet) + "\n")
 

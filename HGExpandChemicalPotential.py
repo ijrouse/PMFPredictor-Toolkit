@@ -33,14 +33,15 @@ def BuildHGEFromCoeffs(r , coeffSet):
     r0Val = coeffSet[0]
     validRegion = r > r0Val
     funcVal = np.zeros_like(r[validRegion])
-    for i in range(1,len(coeffSet)):
-        funcVal += HGEFunc(r[validRegion], r0Val, i) * coeffSet[i]
+    for i in range(2,len(coeffSet)):
+        funcVal += HGEFunc(r[validRegion], r0Val, i-1) * coeffSet[i]
     return funcVal
 
-def getValidRegion(potential):
-   MaskStart =  np.where(  np.logical_and(np.logical_and(    np.isfinite( potential[:,1] )     , potential[:,1] > -1000)  , potential[:,1] < 1000     ) )[0][0]
-   MaskEnd = np.where(  potential[:,0] > 1.5)[0][0]
-   return potential[ MaskStart:MaskEnd ]
+
+def getValidRegion(potential,rmin=0.05):
+    MaskStart =  np.where(  np.logical_and(  potential[:,0] >= rmin  ,np.logical_and(np.logical_and(    np.isfinite( potential[:,1] )     , potential[:,1] > -1000)  , potential[:,1] < 1000     ) ))[0][0]
+    MaskEnd = np.where(  potential[:,0] > 1.5)[0][0]
+    return potential[ MaskStart:MaskEnd ]
     
 def estimateValueLocation( potential, target):
     if np.all( potential[:,1] > target):
@@ -62,7 +63,7 @@ if materialSet.ndim == 1:
     
     
     
-nMaxValAll = 18
+nMaxValAll = 20
 fitEnergyStart = 25
 r0ValAll = 0.25
 
@@ -77,7 +78,7 @@ slabHGELabels = []
 CHGELabels=[]
 KHGELabels=[]
 ClHGELabels=[]
-for i in range(1,nMaxValAll+1):
+for i in range(0,nMaxValAll+1):
     ljHGELabels.append("ChemLJC"+str(i))
     electroHGELabels.append("ChemElC"+str(i))
     waterHGELabels.append("ChemWaterC"+str(i))
@@ -105,6 +106,9 @@ for material in materialSet:
         continue
     r0ValAll =  freeEnergies[  np.where(   freeEnergies[:,3] < fitEnergyStart )[0][0],2]
     r0ValSlab = freeEnergies[  np.where(   freeEnergies[:,5] < fitEnergyStart )[0][0],2]
+    ljC0 = freeEnergies[-1,3]
+    electroC0 = freeEnergies[-1,4]
+    slabC0 = freeEnergies[-1,5]
     ljHGE = HGECoeffs( freeEnergies[:,(2,3)] , r0ValAll, nMaxValAll)
     electroHGE = HGECoeffs( freeEnergies[:,(2,4)] , r0ValAll, nMaxValAll)
     slabMaskStart =  np.where(   np.isfinite( freeEnergies[:,5] ) )[0][0]
@@ -113,13 +117,17 @@ for material in materialSet:
     slabHGE = HGECoeffs( slabPotential, r0ValSlab, nMaxValAll)
     #load surface-water potential and HGE
     waterFreeEnergies = np.genfromtxt( potentialFolder+materialID+"_waterfe.dat",delimiter=",")
+    waterC0 = waterFreeEnergies[-1,3]
     waterHGE = HGECoeffs( waterFreeEnergies[:,(2,3)] , r0ValAll, nMaxValAll)
-    
+     
     
     energyTarget = 35
     CProbeFE = getValidRegion(freeEnergies[:,(2,6)])
     KProbeFE = getValidRegion(freeEnergies[:,(2,7)])
     ClProbeFE = getValidRegion(freeEnergies[:,(2,8)])
+    CProbe0 = CProbeFE[-1,1]
+    ClProbe0 = ClProbeFE[-1,1]
+    KProbe0 = KProbeFE[-1,1]
     CProbeFE[:,1] = CProbeFE[:,1] - CProbeFE[-1,1]
     ClProbeFE[:,1] = ClProbeFE[:,1] - ClProbeFE[-1,1]
     KProbeFE[:,1] = KProbeFE[:,1] - KProbeFE[-1,1]
@@ -136,7 +144,13 @@ for material in materialSet:
     KProbeHGE = HGECoeffs( KProbeFE , r0ValK, nMaxValAll)
     ClProbeHGE = HGECoeffs( ClProbeFE , r0ValCl, nMaxValAll) 
     
-    
+    ljHGE.insert(1,ljC0)
+    electroHGE.insert(1,electroC0)
+    slabHGE.insert(1,slabC0)
+    waterHGE.insert(1,waterC0)
+    CProbeHGE.insert(1, CProbe0)
+    KProbeHGE.insert(1, KProbe0)
+    ClProbeHGE.insert(1, ClProbe0)
     
     #write out coefficients to a file
     resSet =  [ materialID, chemSMILES] + ljHGE +  electroHGE  + waterHGE + slabHGE + CProbeHGE + KProbeHGE + ClProbeHGE

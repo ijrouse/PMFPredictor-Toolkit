@@ -48,7 +48,8 @@ targetList = [
 ["AFUC-AC","CC1OC(O)C(O)C(O)C1O","0"],
 ["BGLCNA-AC","CC(=O)NC1C(O)OC(CO)C(O)C1O","0"],
 ["AMAN-AC","OCC1OC(O)C(O)C(O)C1O","0"],
-["BGLC-AC","OCC1OC(O)C(O)C(O)C1O","0"]
+["BGLC-AC","OCC1OC(O)C(O)C(O)C1O","0"],
+["CAFF-AC", "Cn1cnc2n(C)c(=O)n(C)c(=O)c12","0"]
 
 
 

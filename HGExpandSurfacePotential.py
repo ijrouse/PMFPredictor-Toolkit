@@ -55,8 +55,8 @@ def BuildHGEFromCoeffs(r , coeffSet):
     r0Val = coeffSet[0]
     validRegion = r > r0Val
     funcVal = np.zeros_like(r[validRegion])
-    for i in range(1,len(coeffSet)):
-        funcVal += HGEFunc(r[validRegion], r0Val, i) * coeffSet[i]
+    for i in range(2,len(coeffSet)):
+        funcVal += HGEFunc(r[validRegion], r0Val, i-1) * coeffSet[i]
     return funcVal
 
 def estimateValueLocation( potential, target):
@@ -72,8 +72,8 @@ def estimateValueLocation( potential, target):
     crossingEst = (target - cEst) / mEst
     return (crossingEst,target)
     
-def getValidRegion(potential):
-    MaskStart =  np.where(  np.logical_and(np.logical_and(    np.isfinite( potential[:,1] )     , potential[:,1] > -1000)  , potential[:,1] < 1000     ) )[0][0]
+def getValidRegion(potential,rmin=0.05):
+    MaskStart =  np.where(  np.logical_and(  potential[:,0] >= rmin  ,np.logical_and(np.logical_and(    np.isfinite( potential[:,1] )     , potential[:,1] > -1000)  , potential[:,1] < 1000     ) ))[0][0]
     MaskEnd = np.where(  potential[:,0] > 1.5)[0][0]
     return potential[ MaskStart:MaskEnd ]
 
@@ -102,7 +102,7 @@ CHGELabels=[]
 KHGELabels=[]
 ClHGELabels=[]
 
-for i in range(1,nMaxValAll+1):
+for i in range(0,nMaxValAll+1):
     CHGELabels.append("SurfCProbeC"+str(i))
     KHGELabels.append("SurfKProbeC"+str(i))
     ClHGELabels.append("SurfClProbeC"+str(i))
@@ -130,9 +130,12 @@ for material in materialSet:
     CProbeFE = getValidRegion(freeEnergies[:,(2,3)])
     KProbeFE = getValidRegion(freeEnergies[:,(2,4)])
     ClProbeFE = getValidRegion(freeEnergies[:,(2,5)])
-    CProbeFE[:,1] = CProbeFE[:,1] - CProbeFE[-1,1]
-    ClProbeFE[:,1] = ClProbeFE[:,1] - ClProbeFE[-1,1]
-    KProbeFE[:,1] = KProbeFE[:,1] - KProbeFE[-1,1]
+    CProbe0 = CProbeFE[-1,1]
+    ClProbe0 = ClProbeFE[-1,1]
+    KProbe0 = KProbeFE[-1,1]
+    CProbeFE[:,1] = CProbeFE[:,1] - CProbe0
+    ClProbeFE[:,1] = ClProbeFE[:,1] - ClProbe0
+    KProbeFE[:,1] = KProbeFE[:,1] - KProbe0
     #print(CProbeFE)
     r0ValC = estimateValueLocation(  CProbeFE, energyTarget)[0]
     r0ValK = estimateValueLocation(  KProbeFE, energyTarget)[0]
@@ -145,11 +148,19 @@ for material in materialSet:
     CProbeHGE = HGECoeffs( CProbeFE , r0ValC, nMaxValAll)
     KProbeHGE = HGECoeffs( KProbeFE , r0ValK, nMaxValAll)
     ClProbeHGE = HGECoeffs( ClProbeFE , r0ValCl, nMaxValAll)
+    CProbeHGE.insert(1, CProbe0)
+    KProbeHGE.insert(1, KProbe0)
+    ClProbeHGE.insert(1, ClProbe0)
     #electroHGE = HGECoeffs( freeEnergies[:,(2,4)] , r0ValAll, nMaxValAll)
     #load surface-water potential and HGE
-    r0ValWater = estimateValueLocation( waterFreeEnergies[:,(2,3)], energyTarget)[0]
-    waterFreeEnergies[:,3] = waterFreeEnergies[:,3] - waterFreeEnergies[-1,3]
-    waterHGE = HGECoeffs( waterFreeEnergies[:,(2,3)] , r0ValWater, nMaxValAll)
+    waterFreeEnergies = getValidRegion( waterFreeEnergies[:,(2,3)] )
+    r0ValWater = estimateValueLocation( waterFreeEnergies, energyTarget)[0]
+    if r0ValWater < r0ValC - 0.05:
+        r0ValWater = r0ValC - 0.05
+    waterProbe0 = waterFreeEnergies[-1,1]
+    waterFreeEnergies[:,1] = waterFreeEnergies[:,1] - waterProbe0
+    waterHGE = HGECoeffs( waterFreeEnergies , r0ValWater, nMaxValAll)
+    waterHGE.insert(1, waterProbe0)
     #write out coefficients to a file
     numericShape = 0
     if materialShape=="cylinder":
@@ -168,10 +179,10 @@ for material in materialSet:
         plt.plot( ClProbeFE[::5,0], ClProbeFE[::5,1] ,"gx")
         plt.plot( ClProbeFE[ ClProbeFE[:,0] > ClProbeHGE[0]  ,0], BuildHGEFromCoeffs( ClProbeFE[:,0], ClProbeHGE) ,"g-")
         #print(waterFreeEnergies[::,2], waterFreeEnergies[::,3])
-        plt.plot( waterFreeEnergies[::,2], waterFreeEnergies[::,3] ,"bx")
+        plt.plot( waterFreeEnergies[::,0], waterFreeEnergies[::,1] ,"bx")
         waterRange = np.linspace( waterHGE[0]+0.01, 1.5, 100)
         plt.plot(waterRange, BuildHGEFromCoeffs( waterRange, waterHGE) ,"b-")
-        minPlotEnergy = min ( np.amin(waterFreeEnergies[:,3]), np.amin( freeEnergies[:,4]), np.amin(freeEnergies[:,3]))
+        minPlotEnergy = min ( np.amin(waterFreeEnergies[:,1]), np.amin( freeEnergies[:,4]), np.amin(freeEnergies[:,3]))
         #plt.ylim(minPlotEnergy-5,50)
         plt.xlim(0,1.5)
         plt.ylim(top=50)

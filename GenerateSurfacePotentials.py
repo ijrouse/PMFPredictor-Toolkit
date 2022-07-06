@@ -63,6 +63,8 @@ pointProbes =[
 ]
 
 #Define the molecular probe separately
+
+#x,y,z,   charge, mass, sigma, epsilon
 waterProbe =  [
 [0.00305555555556,-0.00371666666667,0.00438888888889,  -0.834, 16, 0.315 , 0.636],
 [0.01195555555556,0.09068333333333,-0.00881111111111,    0.417, 1, 0.0,0.0],
@@ -73,6 +75,8 @@ waterProbe =  [
 
 
 conversionFactor = ( 8.314/1000.0) * temperature
+
+planeScanHalfLength = 0.5
 
 inputFolder = "Structures/Surfaces"
 outputFolder = "SurfacePotentials"
@@ -92,7 +96,7 @@ alignPointDist = 0.2
 pmfAlignEnergyDefault = 35.0
 #input data has the form
 #label, shape,  energy alignment value, skip energy alignment,   manual energy point at which to align the PMF, skip PMF alignment
-offsetResultFile = open("Datasets/SurfaceOffsetDataDebug.csv","w")
+offsetResultFile = open("Datasets/SurfaceOffsetData.csv","w")
 offsetResultFile.write("Material,ZeroLevelOffset[nm],FEOffset[nm],AlanineOffset[nm]\n")
 
 
@@ -130,7 +134,10 @@ for surfaceTarget in surfaceTargetSet:
     print("Loaded ", len(atomNumericData), "atoms from file")
     alaPMFData = []
     try:
-        pmfText = open("AllPMFsRegularisedOldNames/"+surfaceName+"_ALASCA.dat" , "r")
+        pmfPath = "AllPMFsRegularised/"+surfaceName+"_ALASCA-JS.dat"
+        if not os.path.exists(pmfPath):
+            pmfPath = "AllPMFsRegularised/"+surfaceName+"_ALASCA-AC.dat"
+        pmfText = open(pmfPath , "r")
         for line in pmfText:
             if line[0] == "#":
                 continue
@@ -145,7 +152,7 @@ for surfaceTarget in surfaceTargetSet:
         alaPMFData[:,1] = alaPMFData[:,1] - alaPMFData[-1,1]
 
     except: 
-        print("Failed to read PMF")
+        print("Failed to read PMF, attempted", pmfPath)
         alaAlignPoint = 0
 
     if canSkip == 0:
@@ -176,8 +183,8 @@ for surfaceTarget in surfaceTargetSet:
         else:
             numc1=23
             numc2=23
-            c1Range = np.linspace(-1.0, 1.0, num = numc1, endpoint=True)
-            c2Range = np.linspace(-1.0, 1.0, num = numc2, endpoint=True)
+            c1Range = np.linspace(-planeScanHalfLength, planeScanHalfLength, num = numc1, endpoint=True)
+            c2Range = np.linspace(-planeScanHalfLength, planeScanHalfLength, num = numc2, endpoint=True)
             areaTerm = (c2Range[-1] - c2Range[0]) * (c1Range[-1] - c1Range[0])
             c1grid,c2grid = np.meshgrid(c1Range,c2Range)
             sigmaBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,5] , (numc1,numc2,len(atomNumericData)) ))
@@ -237,7 +244,10 @@ for surfaceTarget in surfaceTargetSet:
                 lastInfPoint = r
             resList.append( [r,r-r0Start, r-r0Start ] + probeFESet)
 
-                
+##x,y,z,   charge, mass, sigma, epsilon
+#waterProbe =  [
+#[0.00305555555556,-0.00371666666667,0.00438888888889,  -0.834, 16, 0.315 , 0.636],
+#                
         print("Starting water")
         rRangeWater =r0Start + np.arange(lastInfPoint-r0Start, 2.0,  0.01 ) #actual resolution 0.01       
         for r in rRangeWater:            
@@ -248,6 +258,8 @@ for surfaceTarget in surfaceTargetSet:
                     rotateMatrixInternal = rotateMatrix(np.pi - theta,-phi)
                     allContributions = 0
                     for atom in waterProbe:
+                        epsCombined = np.sqrt(epsBroadcast * atom[6])
+                        sigmaCombined = 0.5*(sigmaBroadcast + atom[5])
                         #print(theta,phi,atom)
                         ax = atom[0] * rotateMatrixInternal[0,0] + atom[1]*rotateMatrixInternal[0,1] + atom[2]*rotateMatrixInternal[0,2]
                         ay = atom[0] * rotateMatrixInternal[1,0] + atom[1]*rotateMatrixInternal[1,1] + atom[2]*rotateMatrixInternal[1,2]
@@ -262,8 +274,8 @@ for surfaceTarget in surfaceTargetSet:
                                 distList.append(atomDist)
                         distArray = np.array(distList)
                         electricContributions = np.sum( chargeBroadcast  / distArray , axis=0 )
-                        scaledDists = sigmaBroadcast/distArray 
-                        ljContributions =  np.sum( 4*epsBroadcast*( scaledDists**12 - scaledDists**6) , axis=0)
+                        scaledDists = sigmaCombined/distArray 
+                        ljContributions =  np.sum( 4*epsCombined*( scaledDists**12 - scaledDists**6) , axis=0)
                         allContributions += (electroToKJMol*atom[3]*electricContributions + ljContributions)
                     ones = (  1 + np.zeros_like(allContributions) )
                     runningNumerator += np.sum(  np.exp(-allContributions/conversionFactor)     )* np.sin(theta)

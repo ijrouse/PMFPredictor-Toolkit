@@ -49,10 +49,14 @@ def HGECoeffs( inputPotential, r0Val, nmax):
         hgeCoeffRes.append(hgeCoeff)
     return hgeCoeffRes
 
-#define parameters used for the free energy calculation
+#define parameters used for the free energy calculation. probeEpsilon, probeSigma
 temperature = 300.0
 probeEpsilon = 0.3598
 probeSigma = 0.339
+
+slabBeadEpsilon = 0.3598
+slabBeadSigma = 0.339
+
 dielectricConst = 80
 
 pointProbes =[
@@ -79,7 +83,7 @@ electroToKJMol = 1.0/(dielectricConst) *   1.4399 * 1.6e-19 *avogadroNum/1000.0
 #1.4399 arises from (1/4 pi eps0) * 1 elementary charge/1nm to give scaling factor to V , 1.6e-19 is the second elementary charge to give an energy in J, multiply by atoms/mol , divide by 1000 to get kJ/mol
 #this is quite a large number! 
 slabPackingEfficiency = 1.0
-slabDensity = 6 * slabPackingEfficiency/(np.pi * probeSigma**3)
+slabDensity = 6 * slabPackingEfficiency/(np.pi * slabBeadSigma**3)
 
 #label, structure file
 targetSet = np.genfromtxt("Structures/ChemicalDefinitions.csv",dtype=str,delimiter=",")
@@ -117,7 +121,7 @@ for target in targetSet:
     atomNumericData[:,1] = atomNumericData[:,1] - np.sum(atomNumericData[:,1] * atomNumericData[:,4])/np.sum(atomNumericData[:,4])
     atomNumericData[:,2] = atomNumericData[:,2] - np.sum(atomNumericData[:,2] * atomNumericData[:,4])/np.sum(atomNumericData[:,4])
     rRange =r0Start + np.arange(0.0, 1.6, 0.0025)
-
+    #sigmaBroadcast, epsBroadcast, chargeBroadcast are all unmixed values for each atom in the molecule. sigmaBroadcastSlab, epsBroadcastSlab are calculated using mixing rules
     if surfaceType == "sphere":
         numc1=16
         numc2=9
@@ -127,8 +131,8 @@ for target in targetSet:
         sigmaBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,5] , (numc1,numc2,len(atomNumericData)) ))
         epsBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,6] , (numc1,numc2,len(atomNumericData)) ))
         chargeBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,3] , (numc1,numc2,len(atomNumericData)) ))
-        sigmaBroadcast1 = 0.5*(sigmaBroadcast + probeSigma)
-        epsBroadcast1 = np.sqrt( epsBroadcast*probeEpsilon)
+        sigmaBroadcastSlab = 0.5*(sigmaBroadcast + slabBeadSigma)
+        epsBroadcastSlab = np.sqrt( epsBroadcast*slabBeadEpsilon)
     else:
         numc1=23
         numc2=23
@@ -139,8 +143,8 @@ for target in targetSet:
         sigmaBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,5] , (numc1,numc2,len(atomNumericData)) ))
         epsBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,6] , (numc1,numc2,len(atomNumericData)) ))
         chargeBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,3] , (numc1,numc2,len(atomNumericData)) ))
-        sigmaBroadcast1 = 0.5*(sigmaBroadcast + probeSigma)
-        epsBroadcast1 = np.sqrt( epsBroadcast*probeEpsilon)
+        sigmaBroadcastSlab = 0.5*(sigmaBroadcast + slabBeadSigma)
+        epsBroadcastSlab = np.sqrt( epsBroadcast*slabBeadEpsilon)
     resList = []
     waterResList = []
     lastInfPoint = rRange[0] - 1
@@ -162,11 +166,12 @@ for target in targetSet:
         distArray = np.array(distList)
         slabDistArray = np.array(slabDistList)
         electricContributions = chargeBroadcast  / distArray
-        scaledDists = sigmaBroadcast1/distArray 
-        allContributions = np.sum( 4*epsBroadcast1*( scaledDists**12 - scaledDists**6) , axis=0)
+        scaledDists = sigmaBroadcastSlab/distArray
+        scaledDistsSlab = sigmaBroadcastSlab/slabDistArray 
+        allContributions = np.sum( 4*epsBroadcastSlab*( scaledDists**12 - scaledDists**6) , axis=0)
         #slabPackingEfficiency
-        slabPotentialTerms = np.sum(  2*epsBroadcast1 * (sigmaBroadcast**6)* np.pi * slabDensity *(2 * sigmaBroadcast1**6 - 15*slabDistArray**6)/(45 * slabDistArray**9)            ,axis=0)
-        ones = 1 + np.zeros_like(allContributions)
+        slabPotentialTerms = np.sum(  2*epsBroadcastSlab * (sigmaBroadcastSlab**6)* np.pi * slabDensity *(2 * sigmaBroadcastSlab**6 - 15*slabDistArray**6)/(45 * slabDistArray**9)            ,axis=0)
+        ones = 1 + np.zeros_like(slabPotentialTerms)
         freeEnergy=-conversionFactor * np.log( np.sum(   np.exp( -allContributions / conversionFactor) )  / np.sum(ones) )
         slabFreeEnergy =-conversionFactor * np.log( np.sum(   np.exp( -slabPotentialTerms / conversionFactor) )  / np.sum(ones) )
         electrostatic = np.sum( electricContributions * np.exp( -allContributions / conversionFactor) ) / np.sum(np.exp( -allContributions / conversionFactor))
@@ -202,6 +207,8 @@ for target in targetSet:
                 allContributions = 0
                 for atom in waterProbe:
                     #print(theta,phi,atom)
+                    epsCombined = np.sqrt(epsBroadcast * atom[6])
+                    sigmaCombined = 0.5*(sigmaBroadcast + atom[5])
                     ax = atom[0] * rotateMatrixInternal[0,0] + atom[1]*rotateMatrixInternal[0,1] + atom[2]*rotateMatrixInternal[0,2]
                     ay = atom[0] * rotateMatrixInternal[1,0] + atom[1]*rotateMatrixInternal[1,1] + atom[2]*rotateMatrixInternal[1,2]
                     az = atom[0] * rotateMatrixInternal[2,0] + atom[1]*rotateMatrixInternal[2,1] + atom[2]*rotateMatrixInternal[2,2]
@@ -215,8 +222,8 @@ for target in targetSet:
                             distList.append(atomDist)
                     distArray = np.array(distList)
                     electricContributions = np.sum( chargeBroadcast   / distArray , axis=0 )
-                    scaledDists = sigmaBroadcast/distArray 
-                    ljContributions =  np.sum( 4*epsBroadcast*( scaledDists**12 - scaledDists**6) , axis=0)
+                    scaledDists = sigmaCombined/distArray 
+                    ljContributions =  np.sum( 4*epsCombined*( scaledDists**12 - scaledDists**6) , axis=0)
                     allContributions += (electroToKJMol*atom[3]*electricContributions + ljContributions)
                 ones = (  1 + np.zeros_like(allContributions) )
                 runningNumerator += np.sum(  np.exp(-allContributions/conversionFactor)     )* np.sin(theta)

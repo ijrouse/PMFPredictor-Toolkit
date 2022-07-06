@@ -67,7 +67,7 @@ TRPSCA-AC,Cc1c[nH]c2ccccc12,0,TRP side chain
 TYRSCA-AC,Cc1ccc(O)cc1,0,TYR side chain
 VALSCA-AC,CCC,0,VAL side chain
 HIPSCA-AC,Cc1c[nH]c[nH+]1,1, protonated HIS side chain
-CHL-AC,C[N+](C)(C)C,1, choline
+CHL-AC,C[N+](C)(C)C,1, choline head
 ETA-AC,C[NH3+],1,ethanolamine
 PHO-AC,COP(=O)([O-])OC,-1,phosphate
 EST-AC,COC(C)=O,0,ester
@@ -75,7 +75,7 @@ DGL-AC,OCC1OC(O)C(O)C(O)C1O,0,d-glucose
 PROSCA-AC,C1CC1,0,three-membered ring
 CYMSCA-AC,C[S-],-1,charged cysteine
 DMEP-AC,COP(=O)([O-])OC,-1,phosphate
-NC4-AC,C[N+](C)(C)C,1,choline
+NC4-AC,C[N+](C)(C)C,1,choline head
 MAS-AC,COC(C)=O,0,ester
 HSPSCA-AC,Cc1c[nH]c[nH+]1,1,protonated HIS side chain
 MAMM-AC,C[NH3+],1,ethanolamine
@@ -183,3 +183,4 @@ CS-55104-AC,C(C(CN)O)N,0,1<COMMA>3-diamino-2-propanol
 CS-13867413-AC,COC(=O)CC<HASH>N,0,methyl cyanoacetate
 CS-61591-AC,C(C(CO)N)O,0,serinol
 CS-30663-AC,C/N=[N+](\C)/[O-],0,azoxymethane
+CAFF-AC,Cn1cnc2n(C)c(=O)n(C)c(=O)c12,0,caffeine

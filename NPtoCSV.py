@@ -1,7 +1,10 @@
 import os
 
 targetList = [
-["GoldBrush","../Downloads/gold_brush/gold_brush_charmmgui"]
+["AuFCC110UCD","../Downloads/CharmmGUINPs/Au110CG/Au110CG"],
+["AuFCC111UCD","../Downloads/CharmmGUINPs/Au111CG/Au111CG"],
+["CaO001","../Downloads/CharmmGUINPs/CaO-001-charmmgui"],
+["Pt001","../Downloads/CharmmGUINPs/charmm-gui-platinum/charmm-gui-5634115124"]
 ]
 
 print("Generating structures for target CHARMM-GUI downloads")

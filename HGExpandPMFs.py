@@ -60,13 +60,13 @@ seenMaterials = []
 #define parameters for the fitting
 nMaxValAll = 20
 r0ValAll = 0.25
-maximumEnergy = 50
+maximumEnergy = 100
 maxR0 = 1.0
 minR0 = 0.1
 
-pmfOutputFile = open("Datasets/PMFCoefficients.csv","w")
+pmfOutputFile = open("Datasets/PMFCoefficients-v2.csv","w")
 
-hgeLabels = ["Material","Chemical","TargetE0", "fittedE0", "r0"] + [ "A"+str(i) for i in range(1,nMaxValAll+1)]
+hgeLabels = ["Material","Chemical","TargetE0", "fittedE0", "r0"] + [ "A"+str(i) for i in range(1,nMaxValAll+1)] + ["NMaxBest", "BestError" ]
 pmfOutputFile.write( ",".join(hgeLabels) + "\n")
 
 offsetDict = {}
@@ -83,7 +83,7 @@ offsetDictFile.close()
 
 
 for target in targetSet:
-    plt.figure()
+    #plt.figure()
     material,chemical = target.split("/")[-1].split(".")[0].split("_")  
 
     if material in offsetDict:
@@ -117,11 +117,12 @@ for target in targetSet:
         print("Failed to read PMF")
         continue
     PMFData[:,0] = PMFData[:,0] + materialOffsetVal #offset such that ideally the interesting parts of the PMF are in the 0.2 - 1.0 zone
-    plt.plot(PMFData[:,0],PMFData[:,1], "bx")
+    #plt.plot(PMFData[:,0],PMFData[:,1], "bx")
     #discard PMF with extremely high energies
-    closeRangeCutoff = (PMFData[PMFData[:,1] < maximumEnergy*10 ,0])[0]
-    PMFData = PMFData[ PMFData[:,0] > closeRangeCutoff ]
-    print("Truncating PMF before ", closeRangeCutoff)
+    print(PMFData[0])
+    closeRangeCutoff = (PMFData[PMFData[:,1] < maximumEnergy ,0])[0]
+    PMFData = PMFData[ PMFData[:,0] >= closeRangeCutoff ]
+    print("Truncating PMF before ", closeRangeCutoff, "  energy here is: ", PMFData[0] )
     r0ValRange = np.arange( minR0, maxR0, 0.001)
     foundMinima = 0
     for r0Val in r0ValRange:
@@ -136,15 +137,28 @@ for target in targetSet:
             print("attempting to fit inside a minima, stopping")
             break
         hgeSet = HGECoeffs(  PMFData, r0Val, nMaxValAll)
-        resLine = [material,chemical, pmfSubset[0,1] , BuildHGEFromCoeffs(pmfSubset[0,0]  , hgeSet,1)[0] ] + hgeSet
+        currentBestVar = np.sum( pmfSubset[:,1]**2)
+        currentBestMaxIndex = 0
+        #if material=="AuFCC100UCD":
+        #    print( BuildHGEFromCoeffs( pmfSubset[:,0], hgeSet[:i+1], 1) )
+        #    print( pmfSubset[:,1] )
+
+        for i in range(1,1+nMaxValAll):
+            #get PMF mean-square deviation
+            pmfVar =  np.trapz( (BuildHGEFromCoeffs( pmfSubset[:,0], hgeSet[:i+1], 1) - pmfSubset[:,1])**2,   pmfSubset[:,0])
+            if pmfVar < currentBestVar:
+                #print( pmfVar , "beats", currentBestVar, "at index", i)
+                currentBestMaxIndex = i
+                currentBestVar = pmfVar
+        resLine = [material,chemical, pmfSubset[0,1] , BuildHGEFromCoeffs(pmfSubset[0,0]  , hgeSet,1)[0] ] + hgeSet  + [currentBestMaxIndex, currentBestVar]
         fitData= BuildHGEFromCoeffs(pmfSubset[:,0]  , hgeSet,1)
         if pmfSubset[0,1] < maximumEnergy:
-            plt.plot(pmfSubset[:,0],fitData)
+            #plt.plot(pmfSubset[:,0],fitData)
             #print(resLine)
             pmfOutputFile.write( ",".join([str(a) for a in resLine])+"\n")
         
 pmfOutputFile.close()
-plt.show()
+#plt.show()
 '''
 materialSet = np.genfromtxt("Structures/ChemicalDefinitions.csv",dtype=str,delimiter=",")
 if materialSet.ndim == 1:
