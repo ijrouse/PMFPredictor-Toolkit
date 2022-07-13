@@ -17,13 +17,16 @@ import datetime
 
 
 
-targetModel ="pmfpredict-june15-higherLR-evenlowerepsilon-lossweights-4lcfinal-coeff16-bn-mixing-lcstart-v2-predictE0"
+targetModel ="pmfpredict-july12-potential2x32-dense3x32"
 #targetModel = "june14-roughonly-predictr0"
 
 
-
+def scaledMSE(scaleVal):
+    def loss(y_true,y_pred):
+        return tf.keras.losses.mean_squared_error( y_true/scaleVal, y_pred/scaleVal) 
+    return loss
 datasetAll= pd.read_csv("Datasets/TrainingData.csv")
-loadedModel = tf.keras.models.load_model(targetModel+"/checkpoints/checkpoint-train")
+loadedModel = tf.keras.models.load_model("models/"+targetModel+"/checkpoints/checkpoint-train"    , custom_objects={ 'loss': scaledMSE(1) })
 os.makedirs("predicted_pmfs/"+targetModel,exist_ok=True)
 
 UnitedAtomNames = {
@@ -60,17 +63,22 @@ UnitedAtomNames = {
 
 #Write the training set predictions out
 
-varsetFile = open(targetModel+"/varset.txt","r")
+varsetFile = open("models/"+targetModel+"/varset.txt","r")
 aaVarSet = varsetFile.readline().strip().split(",")
 varsetFile.close()
+outputVarset = ["A1","A2","A3","A4","A5","A6","A7","A8","A9","A10","A11","A12","A13","A14","A15","A16" ,"e0predict"]
+'''
 
 predictionSetAll =  ( np.array( loadedModel.predict([    datasetAll[aaVarSet] ]))[:,:,0] ).T
-
-outputVarset = ["r0","A1","A2","A3","A4","A5","A6","A7","A8","A9","A10","A11","A12","A13","A14","A15","A16" ,"e0predict"]
+print(predictionSetAll[1])
+outputVarset = ["A1","A2","A3","A4","A5","A6","A7","A8","A9","A10","A11","A12","A13","A14","A15","A16" ,"e0predict"]
 for i in range(len(outputVarset)):
     datasetAll[ outputVarset[i]+"_regpredict" ] =predictionSetAll[:,i].flatten()
 
 datasetAll.to_csv("predicted_pmfs/"+targetModel+"/checkpointpredictallCoeffs.csv")
+
+'''
+
 
 '''
 targetE0=10
@@ -104,9 +112,7 @@ for materialName in uniqueMaterials:
 
 #loadedModel = tf.keras.models.load_model("checkpoints/"+targetModel)
 
-inputVariableFile = open(targetModel+"_varset.txt")
-inputVarSet = inputVariableFile.read().strip().split(",")
-inputVariableFile.close()
+ 
 
 
 
@@ -121,14 +127,44 @@ combinedDataset["fittedE0"] = targetE0Val
 
 def logSumMax( x):
     return np.log(  np.sum(np.exp(x)))
-combinedDataset["r0"] = np.log(  np.exp(combinedDataset["ChemLJR0"] + np.exp(combinedDataset["SurfLJR0"]))
+#combinedDataset["r0"] = np.log(  np.exp(combinedDataset["ChemLJR0"] )+ np.exp(combinedDataset["SurfLJR0"]))
 
-aaVarSet =  inputVarSet
+
+def recurrentPredict(model, dataset, initialR0 = 0.18, targetE0 = 25):
+    workingDataset = dataset.copy()
+    currentr0 = initialR0
+    workingDataset["r0"] = currentr0
+    workingDataset["lastE0"] =targetE0*2
+    #nonconvergedSet = workingDataset[   workingDataset["lastE0"] > targetE0]
+    nonconvergedMask = workingDataset["lastE0"] > targetE0
+    print(len(workingDataset[nonconvergedMask]))
+    while len( workingDataset[nonconvergedMask] ) > 0 and currentr0 < 1:
+        print(  currentr0)
+        workingDataset.loc[nonconvergedMask,"r0"] = currentr0
+        workingDataset.loc[nonconvergedMask, "lastE0" ] = 0
+        predictionSet = ( np.array( model.predict([ workingDataset.loc[ nonconvergedMask,  aaVarSet] ]))[:,:,0] ).T
+        for i in range(len(outputVarset)):
+            workingDataset.loc[nonconvergedMask,  outputVarset[i]+"_regpredict" ] =predictionSet[:,i].flatten()  
+            if i<16:
+                workingDataset.loc[ nonconvergedMask,   "lastE0" ] = workingDataset.loc[ nonconvergedMask,   "lastE0" ] + np.sqrt(2*(i+1) - 1) * (predictionSet[:,i].flatten() ) /np.sqrt(currentr0)
+        print( workingDataset.loc[nonconvergedMask,   "lastE0"] , predictionSet[:,-1])
+        #workingDataset.update( nonconvergedSet )        
+        nonconvergedMask = workingDataset["lastE0"] > targetE0
+        currentr0 = currentr0+0.01
+    return workingDataset
+
+combinedDataset = recurrentPredict( loadedModel, combinedDataset)
+
+'''
+
 predictionSetSingle =  ( np.array( loadedModel.predict([    combinedDataset[aaVarSet] ]  ,verbose=True ))[:,:,0] ).T
 
 outputVarset = ["r0","A1","A2","A3","A4","A5","A6","A7","A8","A9","A10","A11","A12","A13","A14","A15","A16" ,"e0predict" ]
 for i in range(len(outputVarset)):
     combinedDataset[ outputVarset[i]+"_predicted" ] =predictionSetSingle[:,i].flatten()
+'''
+
+
 
 combinedDataset.to_csv("predicted_pmfs/"+targetModel+"/predicted_coeffs_allpairs.csv")
 
@@ -141,11 +177,11 @@ for materialOff in offsetData:
 for index,row in combinedDataset.iterrows():
     materialName = row["SurfID"]
     chemName = row["ChemID"]
-    r0Target = row["r0_predicted"]
+    r0Target = row["r0"]
     rRange = np.arange( r0Target, 1.5, 0.001)
     pmf = np.zeros_like(rRange)
     for i in range(1,16):
-        pmf = pmf + row["A"+str(i)+"_predicted"] * HGEFunc(rRange, r0Target, i)
+        pmf = pmf + row["A"+str(i)+"_regpredict"] * HGEFunc(rRange, r0Target, i)
     finalPMF = np.stack((rRange,pmf),axis=-1)
     finalPMF[:,1] = finalPMF[:,1] - finalPMF[-1,1]
     finalPMF[:,0] = finalPMF[:,0] - offsetDict[ materialName]

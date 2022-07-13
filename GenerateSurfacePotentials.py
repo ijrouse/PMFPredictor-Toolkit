@@ -55,11 +55,16 @@ dielectricConst = 80
 
 
 #point probes. the first must be left unchanged because this is used to determine the surface level.
-#name, sigma,epsilon,   charge
+#name, sigma,epsilon,   charge, LJ model (=0 for point, =1 for flat disk of radius 0.5nm)
 pointProbes =[
-["C",0.339,0.3598,0],
-["K",0.314264522824 ,  0.36401,1],
-["Cl",0.404468018036 , 0.62760,-1]
+["C",0.339,0.3598,0,0 ],
+["K",0.314264522824 ,  0.36401,1,0],
+["Cl",0.404468018036 , 0.62760,-1,0],
+["C2A",0.2,0.3598,0,0],
+["C4A", 0.4, 0.3598,0,0],
+["C6A", 0.6, 0.3598,0,0],
+["C8A", 0.8, 0.3598,0,0],
+["C10A",1.0,0.3598,0,0]
 ]
 
 #Define the molecular probe separately
@@ -134,9 +139,9 @@ for surfaceTarget in surfaceTargetSet:
     print("Loaded ", len(atomNumericData), "atoms from file")
     alaPMFData = []
     try:
-        pmfPath = "AllPMFsRegularised/"+surfaceName+"_ALASCA-JS.dat"
+        pmfPath = "AllPMFs/"+surfaceName+"_ALASCA-JS.dat"
         if not os.path.exists(pmfPath):
-            pmfPath = "AllPMFsRegularised/"+surfaceName+"_ALASCA-AC.dat"
+            pmfPath = "AllPMFs/"+surfaceName+"_ALASCA-AC.dat"
         pmfText = open(pmfPath , "r")
         for line in pmfText:
             if line[0] == "#":
@@ -225,7 +230,13 @@ for surfaceTarget in surfaceTargetSet:
                 #print(electroToKJMol*probe[3]*electricContributions )
                 electrostaticPotential = np.sum( electroToKJMol*probe[3]*electricContributions   , axis=0)
                 scaledDists = sigmaCombined/distArray 
-                ljPotential = np.sum( 4 * epsCombined * (scaledDists**12 - scaledDists**6 ), axis=0) #sum over atoms
+                if probe[4] == 1:
+                    beadRadius = 0.5
+                    hamterm1 = (4 * beadRadius**3) /(  ( beadRadius**2 - distArray**2  )**3  )
+                    hamterm2 = (sigmaCombined**6/(120.0 * distArray))*(  ( distArray + 9 * beadRadius )/(  (beadRadius+distArray)**9    )    -  (  distArray-9*beadRadius   )/(   ( distArray - beadRadius  )**9    )     )
+                    ljPotential = np.sum( 4.0/3.0 * np.pi * epsCombined * sigmaCombined**6 * (hamterm1 + hamterm2)     , axis=0)
+                else:
+                    ljPotential = np.sum( 4 * epsCombined * (scaledDists**12 - scaledDists**6 ), axis=0) #sum over atoms
                 #print( (4 * epsCombined * (scaledDists**12 - scaledDists**6 )).shape, (electroToKJMol*probe[3]*electricContributions).shape)
                 #print(probe)
                 #print("LJ")
@@ -320,8 +331,9 @@ for surfaceTarget in surfaceTargetSet:
         #
         #print("Alanine PMF is "+str(alignPointEnergy)+" at ", alaAlignPoint, "free energy is at align target at ", freeEnergyAlignPoint)#, " offsetting by ", alaAlignPoint - freeEnergyAlignPoint)
         #
-        #next we align alanine to the same point, i.e. we ewant U_ALA( freeEnergyAlignPoint) = alignPointEnergy if possible.
+        #next we align alanine to the same point, i.e. we want U_ALA( freeEnergyAlignPoint) = alignPointEnergy if possible.
         if foundPMF == 1:
+            pmfAlignEnergy = min( pmfAlignEnergy, np.amax( alaPMFData[:,1] )-0.01)
             (alaAlignPoint, alaAlignVal) = estimateValueLocation(alaPMFData, pmfAlignEnergy  ) #get the point in alanine matching the target energy
             (freeEnergyAlaAlignPoint, freeEnergyAlaAlignVal) = estimateValueLocation( resArray[:,2:] , pmfAlignEnergy ) #get the point in the generated free energy matching the target energy
             alanineOffset = freeEnergyAlaAlignPoint - alaAlignPoint

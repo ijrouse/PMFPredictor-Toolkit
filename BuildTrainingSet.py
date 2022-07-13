@@ -7,9 +7,9 @@ import pandas as pd
 
 import scipy.special as scspec
 import datetime
+import random
 
-
-
+'''
 chemicalCoefficientFile = open("Datasets/ChemicalPotentialCoefficients.csv","r")
 chemHeader=chemicalCoefficientFile.readline().strip().split(",")
 chemDict = {}
@@ -20,6 +20,7 @@ for chemLine in knownChems:
 #print(chemDict)
 chemicalCoefficientFile.close()
 
+
 surfaceCoefficientFile = open("Datasets/SurfacePotentialCoefficients.csv","r")
 surfaceHeader=surfaceCoefficientFile.readline().strip().split(",")
 surfaceDict = {}
@@ -29,6 +30,29 @@ for surfaceLine in knownSurfaces:
     surfaceDict[surfaceLineTerms[0]] = surfaceLineTerms
 #print(surfaceDict)
 surfaceCoefficientFile.close()
+'''
+
+chemicalCoefficientFile = open("Datasets/ChemicalPotentialCoefficientsNoise.csv","r")
+chemHeader=chemicalCoefficientFile.readline().strip().split(",")
+chemSet= []
+knownChems = chemicalCoefficientFile.readlines()
+for chemLine in knownChems:
+    chemLineTerms = chemLine.strip().split(",")
+    chemSet.append(chemLineTerms)
+#print(chemDict)
+chemicalCoefficientFile.close()
+
+
+surfaceCoefficientFile = open("Datasets/SurfacePotentialCoefficientsNoise.csv","r")
+surfaceHeader=surfaceCoefficientFile.readline().strip().split(",")
+surfaceSet = []
+knownSurfaces = surfaceCoefficientFile.readlines()
+for surfaceLine in knownSurfaces:
+    surfaceLineTerms = surfaceLine.strip().split(",")
+    surfaceSet.append( surfaceLineTerms)
+#print(surfaceDict)
+surfaceCoefficientFile.close()
+
 
 
 pmfCoefficientFile = open("Datasets/PMFCoefficients-v2.csv","r")
@@ -48,24 +72,30 @@ outputFile.write( ",".join(headerSet) + "\n")
 
 
 for line in pmfCoefficientFile:
-    #print(line)
-    lineTerms = line.strip().split(",")
-    try:
-        surfaceData = surfaceDict[lineTerms[0]]
-        chemData = chemDict[ lineTerms[1] ]
-    except:
-        continue
-    shape = surfaceData[1]
-    numericShape = 0
-    if shape=="cylinder":
-        numericShape = 1
-    resSet = [lineTerms[0], lineTerms[1]]+   surfaceData[1:] + chemData[1:] + lineTerms[2:]
-    fittedE0 = float(resSet[fittedE0Index])
-    targetE0 = float(resSet[targetE0Index])
-    nmaxBest = float(resSet[nmaxIndex])
-    if np.sqrt( (fittedE0-targetE0)**2 ) < 2 and np.sqrt( (fittedE0-targetE0)**2 ) < 0.1 * targetE0 and nmaxBest > 15:
-        #print(   ",".join(resSet) )
-        outputFile.write( ",".join(resSet) + "\n")
+    for i in range(3):
+        #print(line)
+        lineTerms = line.strip().split(",")
+        try:
+            surfaceChoices = [ surfaceLine for surfaceLine in surfaceSet if surfaceLine[0] == lineTerms[0] ]
+            #surfaceData = surfaceDict[lineTerms[0]]
+            surfaceData = random.choice(surfaceChoices)
+            #print(surfaceData)
+            chemChoices = [ chemLine for chemLine in chemSet if chemLine[0] == lineTerms[1] ]
+            #chemData = chemDict[ lineTerms[1] ]
+            chemData = random.choice(chemChoices)
+        except:
+            continue
+        shape = surfaceData[1]
+        numericShape = 0
+        if shape=="cylinder":
+            numericShape = 1
+        resSet = [lineTerms[0], lineTerms[1]]+   surfaceData[1:] + chemData[1:] + lineTerms[2:]
+        fittedE0 = float(resSet[fittedE0Index])
+        targetE0 = float(resSet[targetE0Index])
+        nmaxBest = float(resSet[nmaxIndex])
+        if np.sqrt( (fittedE0-targetE0)**2 ) < 2 and np.sqrt( (fittedE0-targetE0)**2 ) < 0.1 * targetE0 and nmaxBest > 15:
+            #print(   ",".join(resSet) )
+            outputFile.write( ",".join(resSet) + "\n")
 
 
 pmfCoefficientFile.close()

@@ -1,6 +1,6 @@
 #ID,shape,EnergyAt2A,SkipAlign,PMFAlignTarget,SkipPMF,source,periodiclength
 AuFCC100,plane,35,0,35,0,0,n
-CdSeWurtzite2-10,plane,35,0,25,0,0,n
+CdSeWurtzite2-10,plane,35,0,44,0,0,n
 CNT15,cylinder,35,0,35,0,0,n
 TiO2-ana-100,plane,35,0,35,0,0,n
 CNT15-COOH-30,cylinder,35,0,35,0,0,n

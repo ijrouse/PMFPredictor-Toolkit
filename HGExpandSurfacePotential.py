@@ -94,6 +94,7 @@ r0ValC = 0.2
 potentialFolder = "SurfacePotentials/"
 
 outfile=open("Datasets/SurfacePotentialCoefficients.csv","w")
+noiseoutfile=open("Datasets/SurfacePotentialCoefficientsNoise.csv","w")
 ljHGELabels = []
 electroHGELabels = []
 waterHGELabels = []
@@ -101,23 +102,44 @@ waterHGELabels = []
 CHGELabels=[]
 KHGELabels=[]
 ClHGELabels=[]
+energyTargetBase = 25
 
+energyTargetSet = [5, 10,15,20,25, 30, 35,40]
+
+allProbes = ["C", "Water", "K", "Cl","C2A"]
+allLabels = []
+
+'''
 for i in range(0,nMaxValAll+1):
     CHGELabels.append("SurfCProbeC"+str(i))
     KHGELabels.append("SurfKProbeC"+str(i))
     ClHGELabels.append("SurfClProbeC"+str(i))
     waterHGELabels.append("SurfWaterC"+str(i))
+'''
+for probeLabel in allProbes:
+    allLabels.append("Surf"+probeLabel+"ProbeR0")
+    for i in range(0,nMaxValAll+1):
+        allLabels.append("Surf"+probeLabel+"ProbeC"+str(i))
 
-headerSet =  [ "SurfID", "shape", "numericShape", "source",  "SurfCProbeR0" ] + CHGELabels + ["SurfKProbeR0"] + KHGELabels + ["SurfClProbeR0"] + ClHGELabels  + ["SurfWaterR0"]+ waterHGELabels
+    
+
+#headerSet =  [ "SurfID", "shape", "numericShape", "source",  "SurfCProbeR0" ] + CHGELabels + ["SurfKProbeR0"] + KHGELabels + ["SurfClProbeR0"] + ClHGELabels  + ["SurfWaterR0"]+ waterHGELabels
+headerSet = [ "SurfID", "shape", "numericShape", "source"] + allLabels
 outfile.write( ",".join([str(a) for a in headerSet]) +"\n")
+noiseoutfile.write( ",".join([str(a) for a in headerSet]) +"\n")
 for material in materialSet:
     materialID = material[0]
     print("Starting material ", materialID)
     materialShape = material[1]
     materialPMFSource = material[6]
+    numericShape = 0
+    if materialShape=="cylinder":
+        numericShape = 1
     #load surface-probe potential and HGE
     try:
         freeEnergies = np.genfromtxt( potentialFolder+materialID+"_fev3.dat",delimiter=",")
+        freeEnergiesNames = np.genfromtxt( potentialFolder+materialID+"_fev3.dat",delimiter=",",names=True)
+        freeEnergyHeader = list(freeEnergiesNames.dtype.names)
     except:
         print("Could not locate potentials for", materialID)
         continue
@@ -125,68 +147,54 @@ for material in materialSet:
         waterFreeEnergies = np.genfromtxt( potentialFolder+materialID+"_waterfe.dat",delimiter=",")
     except:
         print("Could not locate water potentials for", materialID)
-        continue        
-    energyTarget = 35
-    CProbeFE = getValidRegion(freeEnergies[:,(2,3)])
-    KProbeFE = getValidRegion(freeEnergies[:,(2,4)])
-    ClProbeFE = getValidRegion(freeEnergies[:,(2,5)])
-    CProbe0 = CProbeFE[-1,1]
-    ClProbe0 = ClProbeFE[-1,1]
-    KProbe0 = KProbeFE[-1,1]
-    CProbeFE[:,1] = CProbeFE[:,1] - CProbe0
-    ClProbeFE[:,1] = ClProbeFE[:,1] - ClProbe0
-    KProbeFE[:,1] = KProbeFE[:,1] - KProbe0
-    #print(CProbeFE)
-    r0ValC = estimateValueLocation(  CProbeFE, energyTarget)[0]
-    r0ValK = estimateValueLocation(  KProbeFE, energyTarget)[0]
-    r0ValCl = estimateValueLocation(  ClProbeFE, energyTarget)[0]
-    if r0ValK < r0ValC - 0.15:
-        r0ValK = r0ValC- 0.15
-    if r0ValCl < r0ValC - 0.15:
-        r0ValCl = r0ValC - 0.15
-    
-    CProbeHGE = HGECoeffs( CProbeFE , r0ValC, nMaxValAll)
-    KProbeHGE = HGECoeffs( KProbeFE , r0ValK, nMaxValAll)
-    ClProbeHGE = HGECoeffs( ClProbeFE , r0ValCl, nMaxValAll)
-    CProbeHGE.insert(1, CProbe0)
-    KProbeHGE.insert(1, KProbe0)
-    ClProbeHGE.insert(1, ClProbe0)
-    #electroHGE = HGECoeffs( freeEnergies[:,(2,4)] , r0ValAll, nMaxValAll)
-    #load surface-water potential and HGE
-    waterFreeEnergies = getValidRegion( waterFreeEnergies[:,(2,3)] )
-    r0ValWater = estimateValueLocation( waterFreeEnergies, energyTarget)[0]
-    if r0ValWater < r0ValC - 0.05:
-        r0ValWater = r0ValC - 0.05
-    waterProbe0 = waterFreeEnergies[-1,1]
-    waterFreeEnergies[:,1] = waterFreeEnergies[:,1] - waterProbe0
-    waterHGE = HGECoeffs( waterFreeEnergies , r0ValWater, nMaxValAll)
-    waterHGE.insert(1, waterProbe0)
-    #write out coefficients to a file
-    numericShape = 0
-    if materialShape=="cylinder":
-        numericShape = 1
-    resSet =  [ materialID, materialShape, numericShape ,materialPMFSource ] + CProbeHGE + KProbeHGE + ClProbeHGE  +  waterHGE
-    resLine = ",".join([str(a) for a in resSet])
-    #print( resLine )
-    outfile.write(resLine+"\n")
-    if plotFigs == 1:
-        plt.figure()
-        plt.plot( CProbeFE[::5,0], CProbeFE[::5,1] ,"kx")
-        #print(CProbeFE[ CProbeFE[:,0] > CProbeHGE[0]  ,0])
-        plt.plot( CProbeFE[ CProbeFE[:,0] > CProbeHGE[0]  ,0], BuildHGEFromCoeffs( CProbeFE[:,0], CProbeHGE) ,"k-")
-        plt.plot( KProbeFE[::5,0], KProbeFE[::5,1] ,"rx")
-        plt.plot( KProbeFE[ KProbeFE[:,0] > KProbeHGE[0]  ,0], BuildHGEFromCoeffs(KProbeFE[:,0], KProbeHGE) ,"r-")
-        plt.plot( ClProbeFE[::5,0], ClProbeFE[::5,1] ,"gx")
-        plt.plot( ClProbeFE[ ClProbeFE[:,0] > ClProbeHGE[0]  ,0], BuildHGEFromCoeffs( ClProbeFE[:,0], ClProbeHGE) ,"g-")
-        #print(waterFreeEnergies[::,2], waterFreeEnergies[::,3])
-        plt.plot( waterFreeEnergies[::,0], waterFreeEnergies[::,1] ,"bx")
-        waterRange = np.linspace( waterHGE[0]+0.01, 1.5, 100)
-        plt.plot(waterRange, BuildHGEFromCoeffs( waterRange, waterHGE) ,"b-")
-        minPlotEnergy = min ( np.amin(waterFreeEnergies[:,1]), np.amin( freeEnergies[:,4]), np.amin(freeEnergies[:,3]))
-        #plt.ylim(minPlotEnergy-5,50)
-        plt.xlim(0,1.5)
-        plt.ylim(top=50)
-        plt.savefig( potentialFolder+"/"+materialID+"-fitted.png")
+        continue      
+    for energyTarget in energyTargetSet:   
+        resSet = [ materialID, materialShape, numericShape ,materialPMFSource]   
+        for probe in allProbes:
+            if probe=="Water":
+                probeFreeEnergies = getValidRegion( waterFreeEnergies[:,(2,3)] )
+            else:
+                probeHeader = "U"+probe+"dkJmol"
+                probeNumber = freeEnergyHeader.index(probeHeader)
+                #print(probe,probeNumber,freeEnergies[:,(2,probeNumber)])
+                probeFreeEnergies  = getValidRegion( freeEnergies[:,(2,probeNumber)])
+                #print(probeFreeEnergies)
+            probeFinalEnergy = probeFreeEnergies[-1,1]
+            probeFreeEnergies[:,1] = probeFreeEnergies[:,1] - probeFinalEnergy
+            
+            r0Val = max(0.1, estimateValueLocation(probeFreeEnergies,energyTarget)[0])
+            probeHGE= HGECoeffs( probeFreeEnergies, r0Val, nMaxValAll)
+            probeHGE.insert(1, probeFinalEnergy)
+            resSet = resSet + probeHGE
+        resLine = ",".join([str(a) for a in resSet])
+        noiseoutfile.write(resLine+"\n")
+        #print( resLine )
+        if energyTarget == energyTargetBase:
+            outfile.write(resLine+"\n")
+                
+                
+                
+outfile.close()
+'''                
+            if plotFigs == 1:
+                plt.figure()
+                plt.plot( CProbeFE[::5,0], CProbeFE[::5,1] ,"kx")
+                #print(CProbeFE[ CProbeFE[:,0] > CProbeHGE[0]  ,0])
+                plt.plot( CProbeFE[ CProbeFE[:,0] > CProbeHGE[0]  ,0], BuildHGEFromCoeffs( CProbeFE[:,0], CProbeHGE) ,"k-")
+                plt.plot( KProbeFE[::5,0], KProbeFE[::5,1] ,"rx")
+                plt.plot( KProbeFE[ KProbeFE[:,0] > KProbeHGE[0]  ,0], BuildHGEFromCoeffs(KProbeFE[:,0], KProbeHGE) ,"r-")
+                plt.plot( ClProbeFE[::5,0], ClProbeFE[::5,1] ,"gx")
+                plt.plot( ClProbeFE[ ClProbeFE[:,0] > ClProbeHGE[0]  ,0], BuildHGEFromCoeffs( ClProbeFE[:,0], ClProbeHGE) ,"g-")
+                #print(waterFreeEnergies[::,2], waterFreeEnergies[::,3])
+                plt.plot( waterFreeEnergies[::,0], waterFreeEnergies[::,1] ,"bx")
+                waterRange = np.linspace( waterHGE[0]+0.01, 1.5, 100)
+                plt.plot(waterRange, BuildHGEFromCoeffs( waterRange, waterHGE) ,"b-")
+                minPlotEnergy = min ( np.amin(waterFreeEnergies[:,1]), np.amin( freeEnergies[:,4]), np.amin(freeEnergies[:,3]))
+                #plt.ylim(minPlotEnergy-5,50)
+                plt.xlim(0,1.5)
+                plt.ylim(top=50)
+                plt.savefig( potentialFolder+"/"+materialID+"-fitted.png")
 outfile.close()
 
 #plt.show()
+'''
