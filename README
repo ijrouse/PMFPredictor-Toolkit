@@ -15,8 +15,8 @@ ACPYPE2CSV.py: A small helper script that calls ACPYPE (which must be installed 
 NPtoCSV.py: A tool for converting NP structures generated using CHARMM-GUI to the CSV molecular format used by the toolkit. GROMACS output must be enabled during operation of CHARMM-GUI and by default it uses non-equilibriated structures but this can be edited - any .gro file containing co-ordinates can be used as input.
 
 Level 1: Generation of potentials.
-GenerateSurfacePotentials.py: Takes in a set of CSV-formatted surface structures and calculates the free energy for a carbon-like probe, a point charge, and water.
-GenerateChemicalPotentials.py : Takes in a set of CSV-formatted chemical structures and calculates the free energy for a carbon-like probe, a carbon-like slab, a point charge, and water.
+GenerateSurfacePotentials.py: Takes in a set of CSV-formatted surface structures and calculates the free energy for a set of point probes specified by Lennard-Jones parameters and a charge, plus water
+GenerateChemicalPotentials.py : Takes in a set of CSV-formatted chemical structures and calculates the free energy for a set of point probes specified by Lennard-Jones parameters and a charge, plus water
 
 Level 2: Extraction of hypergeometric expansion (HGE) coefficients
 HGExpandSurfacePotential.py, HGExpandChemicalPotential.py : Construct HGExpansions of the potentials obtained using the scripts in level 1 for all surfaces and chemicals.
@@ -38,7 +38,7 @@ The "source" variable for a surface defines whether it should be treated as a St
 AN IMPORTANT NOTE ON TRAINING/VALIDATION/TEST splits
 ===========
 All PMFS in either "AllPMFsRegularised" or "AllPMFS" are considered fair game for model development - the scripts used to generate the datasets are greedy and will read these in if they are present. Thus, anything which should be kept for sight-unseen testing should not be added to this folder. As a failsafe, the script skips these if either the surface or chemical are not registered in the definitions files.
-The training/validation splits used to optimise parameters/hyperparameters are randomly generated.
+The training/validation splits used to optimise parameters/hyperparameters are generated based on a cluster analysis to try to ensure the training set contains as wide a variety as possible.
 
 
 ===========
@@ -51,7 +51,7 @@ Workflow for generating PMFs for new surfaces
 3) Run GenerateSurfacePotentials.py to build the free-energy probe and water tables describing all materials listed in the SurfaceDefinitions.csv table. This may take up to half an hour for each, possibly longer depending on the size of your surface. This will also update the material_offsets file used to help align pre-existing PMFs.
 4) Run HGExpandSurfacePotential.py to generate the expansion coefficients describing the materials.
 
-It is not recommended to include water! This is in principle added by the ML model, so use dry structures only for consistency.
+The input structures should not contain unbound water, but if this is known to be irreversibly bound to the surface it can be included.
 
 ===========
 Workflow for generating PMFs for new chemicals

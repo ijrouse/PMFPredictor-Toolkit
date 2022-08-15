@@ -4,7 +4,10 @@ targetList = [
 ["AuFCC110UCD","../Downloads/CharmmGUINPs/Au110CG/Au110CG"],
 ["AuFCC111UCD","../Downloads/CharmmGUINPs/Au111CG/Au111CG"],
 ["CaO001","../Downloads/CharmmGUINPs/CaO-001-charmmgui"],
-["Pt001","../Downloads/CharmmGUINPs/charmm-gui-platinum/charmm-gui-5634115124"]
+["Pt001","../Downloads/CharmmGUINPs/charmm-gui-platinum/charmm-gui-5634115124"],
+["AlFCC100UCD","../Downloads/CharmmGUINPs/Al001-Charmm/Al001"],
+["AlFCC110UCD","../Downloads/CharmmGUINPs/Al110-Charmm/Al110"],
+["AlFCC111UCD","../Downloads/CharmmGUINPs/Al111-Charmm/Al111"],
 ]
 
 print("Generating structures for target CHARMM-GUI downloads")

@@ -15,18 +15,74 @@ from tensorflow.keras.utils import plot_model
 import scipy.special as scspec
 import datetime
 
+def loadPMF(target):
+    PMFData = []
+    foundAC = 1
+    foundJS = 1
+    try:
+        pmfText = open(target , "r")
+        for line in pmfText:
+            if line[0] == "#":
+                continue
+            if "," in line:
+                lineTerms = line.strip().split(",")
+            else:
+                lineTerms = line.split()
+            PMFData.append([float(lineTerms[0]),float(lineTerms[1])])
+        pmfText.close()
+        foundPMF = 1
+        print("Loaded ", target)
+        PMFData = np.array(PMFData)
+        PMFData[:,1] = PMFData[:,1] - PMFData[-1,1] #set to 0 at end of PMF
+    except: 
+        print("Failed to read PMF (AC)", target)
+        foundAC = 0
+    if foundAC == 1:
+        return PMFData    
+    try:
+        JSTarget = target[:-6]+"JS.dat"
+        print(JSTarget)
+        pmfText = open(JSTarget , "r")
+        for line in pmfText:
+            if line[0] == "#":
+                continue
+            if "," in line:
+                lineTerms = line.strip().split(",")
+            else:
+                lineTerms = line.split()
+            PMFData.append([float(lineTerms[0]),float(lineTerms[1])])
+        pmfText.close()
+        foundPMF = 1
+        print("Loaded ", JSTarget)
+        PMFData = np.array(PMFData)
+        PMFData[:,1] = PMFData[:,1] - PMFData[-1,1] #set to 0 at end of PMF
+    except:    
+        foundJS = 0
+    if foundJS == 1:
+        return PMFData
+    return np.array( [ [0,0] , [1.5,0]])
 
-
-targetModel ="pmfpredict-july12-potential2x32-dense3x32"
+ 
+        
+      
+targetModel ="pmfpredict-july25-order20-cosinefixed-moredata-censoredenergies-scaledmixerr-v2-desatfinal-eadsdesat"
 #targetModel = "june14-roughonly-predictr0"
+targetModel="pmfpredict-july25-order20-cosinefixed-moredata-censoredenergies-scaledmixerr-v2-desatlogactivation-morenoise-rmsadd0p3"
+targetModel="pmfpredict-july27-deconvresid-1-unscaledmse-noe0-extracorrection-wider-prescale-e0est-extranoise-noscaffolds"
+
+
+
+
+targetModel="pmfpredict-aug02-gatealpha0p1-nresid8-mixing5"
 
 
 def scaledMSE(scaleVal):
     def loss(y_true,y_pred):
         return tf.keras.losses.mean_squared_error( y_true/scaleVal, y_pred/scaleVal) 
     return loss
-datasetAll= pd.read_csv("Datasets/TrainingData.csv")
-loadedModel = tf.keras.models.load_model("models/"+targetModel+"/checkpoints/checkpoint-train"    , custom_objects={ 'loss': scaledMSE(1) })
+    
+#datasetAll= pd.read_csv("Datasets/TrainingData.csv")
+
 os.makedirs("predicted_pmfs/"+targetModel,exist_ok=True)
 
 UnitedAtomNames = {
@@ -66,7 +122,10 @@ UnitedAtomNames = {
 varsetFile = open("models/"+targetModel+"/varset.txt","r")
 aaVarSet = varsetFile.readline().strip().split(",")
 varsetFile.close()
-outputVarset = ["A1","A2","A3","A4","A5","A6","A7","A8","A9","A10","A11","A12","A13","A14","A15","A16" ,"e0predict"]
+loadedModel = tf.keras.models.load_model("models/"+targetModel+"/checkpoints/checkpoint-train"    , custom_objects={ 'loss': scaledMSE(1) ,'aaVarSet':aaVarSet })
+
+
+outputVarset = ["A1","A2","A3","A4","A5","A6","A7","A8","A9","A10","A11","A12","A13","A14","A15","A16", "A17","A18","A19","A20" ,"e0predict","Emin"]
 '''
 
 predictionSetAll =  ( np.array( loadedModel.predict([    datasetAll[aaVarSet] ]))[:,:,0] ).T
@@ -101,60 +160,203 @@ datasetSingle.to_csv("predicted_pmfs/"+targetModel+"/checkpointpredict_targetinp
 def HGEFunc(r, r0, n):
     return (-1)**(1+n) * np.sqrt( 2*n - 1) * np.sqrt(r0)/r * scspec.hyp2f1(1-n,n,1,r0/r)
 
-targetMolecules = pd.read_csv("Datasets/ChemicalPotentialCoefficients.csv")
-targetSurfaces = pd.read_csv("Datasets/SurfacePotentialCoefficients.csv")
-targetE0Val = 10
+targetMolecules = pd.read_csv("Datasets/ChemicalPotentialCoefficientsNoise1-july28.csv")
+targetSurfaces = pd.read_csv("Datasets/SurfacePotentialCoefficientsNoise-1-july28.csv")
+targetE0Val = 50
 
 uniqueMaterials = targetSurfaces['SurfID'].unique().tolist()
 for materialName in uniqueMaterials:
     os.makedirs( "predicted_pmfs/"+targetModel+"/allchemicals/"+materialName,exist_ok=True)
     os.makedirs( "predicted_pmfs/"+targetModel+"/UA-surface-predicted/"+materialName,exist_ok=True)
-
+os.makedirs("predicted_pmfs/"+targetModel+"/PMFFigures", exist_ok=True)
 #loadedModel = tf.keras.models.load_model("checkpoints/"+targetModel)
 
  
 
+uniquetargetMolecules = targetMolecules.drop_duplicates( subset=['ChemID']  ,keep='first')
+uniquetargetSurfaces = targetSurfaces.drop_duplicates( subset=['SurfID']  ,keep='first')
+surfaceParamSet = targetSurfaces.columns.tolist()
+chemParamSet = targetMolecules.columns.tolist()   
+print(targetSurfaces)
+
+#build the placeholder database with every molecule x surface pair
+combinedDataset = pd.merge(uniquetargetMolecules,uniquetargetSurfaces,how="cross")
+
+combinedDataset["PMFName"] = combinedDataset["SurfID"]+"_"+combinedDataset["ChemID"]
+
+#datasetAll=datasetAll.drop( datasetAll[( datasetAll["fittedE0"] ) > maxE0].index )
 
 
-combinedDataset = pd.merge(targetMolecules,targetSurfaces,how="cross")
-combinedDataset["fittedE0"] = targetE0Val
+#combinedDataset = pd.merge(uniquetargetMolecules,uniquetargetSurfaces,how="cross")
+#combinedDataset = combinedDataset.drop(       combinedDataset[     combinedDataset["ChemCProbeR0"] != combinedDataset["SurfCProbeR0"]       ].index                ) 
 
+
+
+
+
+#combinedDataset = combinedDataset.sort_values( by=["ChemCProbeR0"] ,ascending=False)
+
+
+
+#combinedDataset["fittedE0"] = targetE0Val
+#combinedDataset["rEMin"] = 0.5
 #combinedDataset["r0original"] = combinedDataset["r0"]
 #combinedDataset["r0"] = 
 #combinedDataset["rmin"] = combinedDataset["fljr0"] + 0.01
 #combinedDataset["rmin"].clip(lower = 0.2, inplace=True)
 #print(combinedDataset)
 
+#placeholder values for the parameters used in model training
+combinedDataset["rEMin"] = 0.5
+combinedDataset["EMin"] = -1 
+combinedDataset["fittedE0"] = 20
+combinedDataset["r0"] = 0.2 + combinedDataset["SurfAlignDist"]
+
 def logSumMax( x):
     return np.log(  np.sum(np.exp(x)))
 #combinedDataset["r0"] = np.log(  np.exp(combinedDataset["ChemLJR0"] )+ np.exp(combinedDataset["SurfLJR0"]))
 
 
-def recurrentPredict(model, dataset, initialR0 = 0.18, targetE0 = 25):
+#Generate PMFs by stepwise prediction moving either forwards or backwards through the value of rmin in a specified interval, stopping when E(RMin) = targetE0.
+def recurrentPredict(model, dataset, direction=-1, r0Min = 0.05, r0Max=0.9, targetE0 = 20):
     workingDataset = dataset.copy()
-    currentr0 = initialR0
+    if direction==-1:
+        currentr0 = r0Max - 0.01
+    else:
+        currentr0 = r0Min + 0.01 
     workingDataset["r0"] = currentr0
-    workingDataset["lastE0"] =targetE0*2
+    workingDataset["lastE0"] =direction*targetE0*2
     #nonconvergedSet = workingDataset[   workingDataset["lastE0"] > targetE0]
-    nonconvergedMask = workingDataset["lastE0"] > targetE0
-    print(len(workingDataset[nonconvergedMask]))
-    while len( workingDataset[nonconvergedMask] ) > 0 and currentr0 < 1:
+
+    if direction == -1:
+        nonconvergedMask = workingDataset["lastE0"] < targetE0
+    else:
+        nonconvergedMask = workingDataset["lastE0"] > targetE0
+    #print(len(workingDataset[nonconvergedMask]))
+    while len( workingDataset[nonconvergedMask] ) > 0 and currentr0 < r0Max and currentr0 > r0Min:
+    
+   
         print(  currentr0)
+
+        
         workingDataset.loc[nonconvergedMask,"r0"] = currentr0
         workingDataset.loc[nonconvergedMask, "lastE0" ] = 0
-        predictionSet = ( np.array( model.predict([ workingDataset.loc[ nonconvergedMask,  aaVarSet] ]))[:,:,0] ).T
+        #sort target molecules by the distance of r0 from currentr0, drop duplicates
+        #update workingDataset by target molecule names
+        #repeat for surfaces        
+        
+        
+        predictionSet = ( np.array( model.predict([ workingDataset.loc[ nonconvergedMask,  aaVarSet] ])[0]   )[:,:,0] ).T
         for i in range(len(outputVarset)):
             workingDataset.loc[nonconvergedMask,  outputVarset[i]+"_regpredict" ] =predictionSet[:,i].flatten()  
             if i<16:
                 workingDataset.loc[ nonconvergedMask,   "lastE0" ] = workingDataset.loc[ nonconvergedMask,   "lastE0" ] + np.sqrt(2*(i+1) - 1) * (predictionSet[:,i].flatten() ) /np.sqrt(currentr0)
-        print( workingDataset.loc[nonconvergedMask,   "lastE0"] , predictionSet[:,-1])
-        #workingDataset.update( nonconvergedSet )        
-        nonconvergedMask = workingDataset["lastE0"] > targetE0
-        currentr0 = currentr0+0.01
+        #print( workingDataset.loc[nonconvergedMask,   "lastE0"] , predictionSet[:,-1])
+        #workingDataset.update( nonconvergedSet )   
+        if direction == -1:
+            nonconvergedMask = workingDataset["lastE0"] < targetE0 
+        else:     
+            nonconvergedMask = workingDataset["lastE0"] > targetE0 
+        currentr0 = currentr0+   direction*0.01
     return workingDataset
+    
+def singleStepPredict(model,dataset):
+    predictionSet = ( np.array( model.predict(  [ dataset[aaVarSet]   ]   )[0])[:,:,0] ).T
+    for i in range(len(outputVarset)):
+        dataset[ outputVarset[i]+"_regpredict" ] =predictionSet[:,i].flatten()  
+    return dataset
 
-combinedDataset = recurrentPredict( loadedModel, combinedDataset)
 
+def buildDatasetAtR0(r0):
+    chemDataset = targetMolecules.copy()
+    surfDataset = targetSurfaces.copy()
+    chemDataset["R0Dist"] = np.sqrt((chemDataset["ChemCProbeR0"].to_numpy() -  r0)**2)
+    chemDataset.sort_values( by=["R0Dist"] ,ascending=True, inplace=True)
+    chemDataset = chemDataset.drop_duplicates( subset=['ChemID']  ,keep='first')       
+    surfDataset["R0Dist"] = np.sqrt((surfaceSetWorking["SurfCProbeR0"].to_numpy() - currentr0)**2)
+    surfDataset.sort_values( by=["R0Dist"] ,ascending=True, inplace=True)
+    surfDataset = surfDataset.drop_duplicates( subset=['SurfID']  ,keep='first')  
+    return pd.merge(chemDataset,surfDataset,how="cross")
+
+
+def mergePredict():
+    r0Range = np.array([0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9])
+    rRange = np.arange(0.1,1.5,0.05)
+    
+    for r0Val in r0Range:
+        combinedDatasetAtR0 = buildDatasetAtR0(r0Val)
+        combinedDatasetAtR0["r0"] = r0Val
+        combinedDatasetAtR0["EMin"] = -1
+        combinedDatasetAtR0["rEMin"] = 0.5
+        combinedDatasetAtR0[  "lastE0" ] = 0
+        combinedDatasetAtR0[  "fittedE0" ] = targetE0
+        predictionSet = ( np.array( model.predict([ combinedDatasetAtR0[ aaVarSet]      ])[0]   )[:,:,0] ).T
+        for i in range(len(outputVarset)):
+            combinedDatasetAtR0[ outputVarset[i]+"_regpredict" ] =predictionSet[:,i].flatten()  
+            if i<16:
+                combinedDatasetAtR0[   "lastE0" ] = combinedDatasetAtR0[  "lastE0" ] + np.sqrt(2*(i+1) - 1) * (predictionSet[:,i].flatten() ) /np.sqrt(currentr0)
+                
+                
+                
+                
+def recurrentPredictV2(model, dataset, direction=-1, r0Min = 0.05, r0Max=0.9, targetE0 = 20):
+
+    moleculeSetWorking = targetMolecules.copy()
+    surfaceSetWorking = targetSurfaces.copy()
+    if direction==-1:
+        currentr0 = r0Max - 0.01
+    else:
+        currentr0 = r0Min + 0.01 
+    #nonconvergedSet = workingDataset[   workingDataset["lastE0"] > targetE0]
+
+    allPMFs = dataset["PMFName"].values.tolist()
+    completedPMFs = []
+    completedPMFSet = dataset.iloc[:0,:].copy() 
+    #print(allPMFs)
+    #print(len(workingDataset[nonconvergedMask]))
+    while len(completedPMFs) < len(allPMFs) and currentr0 < r0Max and currentr0 > r0Min:
+        print(  currentr0)
+        #sort all molecule and surface lines to find the ones with the closest set of values of r0
+        moleculeSetWorking["R0Dist"] = np.sqrt((moleculeSetWorking["ChemCProbeR0"].to_numpy() - currentr0)**2)
+        moleculeSetWorking.sort_values( by=["R0Dist"] ,ascending=True, inplace=True)
+        moleculeBestMatches = moleculeSetWorking.drop_duplicates( subset=['ChemID']  ,keep='first')       
+        surfaceSetWorking["R0Dist"] = np.sqrt((surfaceSetWorking["SurfCProbeR0"].to_numpy() - currentr0)**2)
+        surfaceSetWorking.sort_values( by=["R0Dist"] ,ascending=True, inplace=True)
+        #print(targetSurfaces)
+        surfaceBestMatches = surfaceSetWorking.drop_duplicates( subset=['SurfID']  ,keep='first')  
+        #print(moleculeBestMatches)             
+        #print(surfaceBestMatches )
+        combinedDatasetAtR0 = pd.merge(moleculeBestMatches,surfaceBestMatches,how="cross")
+        combinedDatasetAtR0["PMFName"] = combinedDatasetAtR0["SurfID"]+"_"+combinedDatasetAtR0["ChemID"]
+        combinedDatasetAtR0.sort_values( by=["PMFName"],inplace=True,ascending=True)
+        combinedDatasetAtR0.drop( combinedDatasetAtR0[combinedDatasetAtR0["PMFName"].isin( completedPMFs)].index,inplace=True )
+        combinedDatasetAtR0["r0"] = currentr0
+        combinedDatasetAtR0["EMin"] = -1
+        combinedDatasetAtR0["rEMin"] = 0.5
+        combinedDatasetAtR0[  "lastE0" ] = 0
+        combinedDatasetAtR0[  "fittedE0" ] = targetE0
+        predictionSet = ( np.array( model.predict([ combinedDatasetAtR0[ aaVarSet]      ])[0]   )[:,:,0] ).T
+        for i in range(len(outputVarset)):
+            combinedDatasetAtR0[ outputVarset[i]+"_regpredict" ] =predictionSet[:,i].flatten()  
+            if i<16:
+                combinedDatasetAtR0[   "lastE0" ] = combinedDatasetAtR0[  "lastE0" ] + np.sqrt(2*(i+1) - 1) * (predictionSet[:,i].flatten() ) /np.sqrt(currentr0)
+        #print( workingDataset.loc[nonconvergedMask,   "lastE0"] , predictionSet[:,-1])
+        #workingDataset.update( nonconvergedSet )   
+        if direction == -1:
+            newFinishedNames = combinedDatasetAtR0.loc[   combinedDatasetAtR0["lastE0"] > targetE0  ,"PMFName"  ].values.tolist()
+            completedPMFSet = completedPMFSet.append(  combinedDatasetAtR0[   combinedDatasetAtR0["lastE0"] > targetE0  ] )
+
+        else:     
+            newFinishedNames = combinedDatasetAtR0.loc[   combinedDatasetAtR0["lastE0"] < targetE0  ,"PMFName"  ].values.tolist()
+            completedPMFSet = completedPMFSet.append( combinedDatasetAtR0[   combinedDatasetAtR0["lastE0"] < targetE0  ]  )
+        completedPMFs = completedPMFs + newFinishedNames    
+        print(completedPMFSet)
+        currentr0 = currentr0+   direction*0.01
+    return completedPMFSet
+
+    
+#combinedDataset = recurrentPredictV2( loadedModel, combinedDataset, direction=1, r0Min = 0.15, r0Max = 0.8, targetE0=40)
+combinedDataset = singleStepPredict(loadedModel,combinedDataset)
 '''
 
 predictionSetSingle =  ( np.array( loadedModel.predict([    combinedDataset[aaVarSet] ]  ,verbose=True ))[:,:,0] ).T
@@ -168,28 +370,50 @@ for i in range(len(outputVarset)):
 
 combinedDataset.to_csv("predicted_pmfs/"+targetModel+"/predicted_coeffs_allpairs.csv")
 
-offsetData = np.genfromtxt("Datasets/SurfaceOffsetData.csv",skip_header=1,delimiter=",", dtype=str)
+offsetData = np.genfromtxt("Datasets/SurfaceOffsetDataManual.csv",skip_header=1,delimiter=",", dtype=str)
 offsetDict = {}
 for materialOff in offsetData:
     offsetDict[ materialOff[0] ] = float( materialOff[3] )
  
+
+makePlots = 1
+outputPlot = plt.figure() 
  
+ 
+seenPMFs = [] 
 for index,row in combinedDataset.iterrows():
     materialName = row["SurfID"]
     chemName = row["ChemID"]
     r0Target = row["r0"]
+    if materialName+"_"+chemName in seenPMFs:
+        continue
     rRange = np.arange( r0Target, 1.5, 0.001)
     pmf = np.zeros_like(rRange)
-    for i in range(1,16):
-        pmf = pmf + row["A"+str(i)+"_regpredict"] * HGEFunc(rRange, r0Target, i)
+    for i in range(1,20):
+        pmf = pmf + row["A"+str(i)+"_regpredict"] * HGEFunc(rRange, r0Target+0.001, i)
     finalPMF = np.stack((rRange,pmf),axis=-1)
     finalPMF[:,1] = finalPMF[:,1] - finalPMF[-1,1]
-    finalPMF[:,0] = finalPMF[:,0] - offsetDict[ materialName]
+    firstVal = finalPMF[0,1]
+    if firstVal < 20 :
+        continue
+    seenPMFs.append( materialName+"_"+chemName )
+    finalPMFOffset = np.copy(finalPMF)
+    finalPMFOffset[:,0] = finalPMFOffset[:,0] + offsetDict[ materialName]
     np.savetxt("predicted_pmfs/"+targetModel+"/allchemicals/"+materialName+"/"+chemName+".dat" ,finalPMF,fmt='%.18f' ,delimiter=",")
     if chemName in UnitedAtomNames:
         np.savetxt("predicted_pmfs/"+targetModel+"/UA-surface-predicted/"+materialName+"/"+UnitedAtomNames[chemName]+".dat" ,finalPMF,fmt='%.18f' ,delimiter=",")
-    
-    
+        if makePlots == 1:
+             originalPMFData = loadPMF("AllPMFs/"+ materialName+"_"+chemName+".dat"   )
+             outputPlot.clear()
+             plt.plot( originalPMFData[::5,0], originalPMFData[::5,1], 'bx')
+             plt.plot( finalPMF[:,0], finalPMF[:,1], 'k:')
+             plt.plot( finalPMFOffset[:,0], finalPMFOffset[:,1], 'k-')
+             plt.xlabel("r [nm]")
+             plt.ylabel( "U(r) [kJ/mol]")
+             plt.xlim(0,1.5)
+             plt.savefig("predicted_pmfs/"+targetModel+"/PMFFigures/"+ materialName+"_"+chemName+".png")
+             
+             
 readmeFile = open("predicted_pmfs/"+targetModel+"/README","w")
 readmeFile.write("PMFs contained here were generated at " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " using model variant " + targetModel)
 readmeFile.close()

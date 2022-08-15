@@ -8,6 +8,15 @@ import datetime
 import scipy.integrate
 import scipy.interpolate
 import warnings
+import argparse
+
+parser = argparse.ArgumentParser(description="Parameters for HGExpandSurfacePotential")
+parser.add_argument("-f","--forcerecalc", type=int,default=0,help="If 1 then potential HGE coeffs are recalculated even if their table already exists")
+args = parser.parse_args()
+
+
+
+
 def HGEFunc(r, r0, n):
     return (-1)**(1+n) * np.sqrt( 2*n - 1) * np.sqrt(r0)/r * scspec.hyp2f1(1-n,n,1,r0/r)
     
@@ -73,11 +82,26 @@ def estimateValueLocation( potential, target):
     return (crossingEst,target)
     
 def getValidRegion(potential,rmin=0.05):
-    MaskStart =  np.where(  np.logical_and(  potential[:,0] >= rmin  ,np.logical_and(np.logical_and(    np.isfinite( potential[:,1] )     , potential[:,1] > -1000)  , potential[:,1] < 1000     ) ))[0][0]
+    MaskStart =  np.where(  np.logical_and(  potential[:,0] >= rmin  ,       np.isfinite( potential[:,1] )       ))[0][0]
+    #MaskStart =  np.where(  np.logical_and(  potential[:,0] >= rmin  ,np.logical_and(np.logical_and(    np.isfinite( potential[:,1] )     , potential[:,1] > -1000)  , potential[:,1] < 1000     ) ))[0][0]
     MaskEnd = np.where(  potential[:,0] > 1.5)[0][0]
     return potential[ MaskStart:MaskEnd ]
 
-     
+
+def applyNoiseUniform(freeEnergySet):
+    freeEnergySet[:,0] = freeEnergySet[:,0] + np.random.uniform( -0.05, 0.05)  
+    freeEnergySet[:,1] = freeEnergySet[:,1] * np.random.uniform( 1-0.1,1+0.1) + np.random.uniform( -0.1,0.1, len(freeEnergySet))
+    return freeEnergySet
+    
+         
+
+def applyNoise(freeEnergySet):
+    #translate with probability 0.5
+    freeEnergySet[:,0] = freeEnergySet[:,0] + np.random.normal( 0, 0.01)
+    freeEnergySet[:,1] = freeEnergySet[:,1] * np.random.normal( 1, 0.1) + np.random.normal( 0, 0.2, len(freeEnergySet))
+    return freeEnergySet
+
+
  #material ID, shape, source
 
 warnings.filterwarnings('ignore')
@@ -88,13 +112,19 @@ if materialSet.ndim == 1:
     
 plotFigs = 1
 
-nMaxValAll = 18
+nMaxValAll = 20
 r0ValC = 0.2
 
+
+maxR0 = 1.0
+minR0 = 0.05
+r0ValRange =  np.arange( minR0, maxR0, 0.01)
+
+noiseReplicas = 1
 potentialFolder = "SurfacePotentials/"
 
-outfile=open("Datasets/SurfacePotentialCoefficients.csv","w")
-noiseoutfile=open("Datasets/SurfacePotentialCoefficientsNoise.csv","w")
+outfile=open("Datasets/SurfacePotentialCoefficients-aug14.csv","w")
+noiseoutfile=open("Datasets/SurfacePotentialCoefficientsNoise-"+str(noiseReplicas)+"-aug14.csv","w")
 ljHGELabels = []
 electroHGELabels = []
 waterHGELabels = []
@@ -104,9 +134,12 @@ KHGELabels=[]
 ClHGELabels=[]
 energyTargetBase = 25
 
-energyTargetSet = [5, 10,15,20,25, 30, 35,40]
+#energyTargetSet = [5, 10,15,20,25, 30, 35,40]
+energyTargetSet = [25]
+pointProbes = [ ["C",""] ,  ["K",""], ["Cl",""] ,["C2A",""],["C10A",""]  ]
+moleculeProbes = [ ["Methane","methanefe"]  ,["Water", "waterfe"] ,["WaterUCD","waterUCDfe"] ,["CarbonRing","carbringfe"]]
 
-allProbes = ["C", "Water", "K", "Cl","C2A"]
+allProbes = moleculeProbes + pointProbes
 allLabels = []
 
 '''
@@ -116,62 +149,119 @@ for i in range(0,nMaxValAll+1):
     ClHGELabels.append("SurfClProbeC"+str(i))
     waterHGELabels.append("SurfWaterC"+str(i))
 '''
-for probeLabel in allProbes:
+
+offsetDict = {}
+offsetDictFile = open("Datasets/SurfaceOffsetDataFEDists.csv","r")
+firstline =0
+offsetDictFileLines=offsetDictFile.readlines()
+for line in offsetDictFileLines:
+    if firstline == 0:
+        firstline = 1
+        continue
+    lineParts =  line.strip().split(",")
+    offsetDict[lineParts[0]] = float(lineParts[3]) 
+offsetDictFile.close()
+
+
+for probeDef in allProbes:
+    probeLabel = probeDef[0]
+    probeFile = probeDef[1]
     allLabels.append("Surf"+probeLabel+"ProbeR0")
     for i in range(0,nMaxValAll+1):
         allLabels.append("Surf"+probeLabel+"ProbeC"+str(i))
-
-    
+    allLabels.append("Surf"+probeLabel+"ProbeEMin")
+    allLabels.append("Surf"+probeLabel+"ProbeRightEMin")    
 
 #headerSet =  [ "SurfID", "shape", "numericShape", "source",  "SurfCProbeR0" ] + CHGELabels + ["SurfKProbeR0"] + KHGELabels + ["SurfClProbeR0"] + ClHGELabels  + ["SurfWaterR0"]+ waterHGELabels
-headerSet = [ "SurfID", "shape", "numericShape", "source"] + allLabels
+headerSet = [ "SurfID", "shape", "numericShape", "source","ssdType" ,"SurfAlignDist"] + allLabels
 outfile.write( ",".join([str(a) for a in headerSet]) +"\n")
 noiseoutfile.write( ",".join([str(a) for a in headerSet]) +"\n")
+
 for material in materialSet:
     materialID = material[0]
     print("Starting material ", materialID)
+    print("Surface alignment offset", offsetDict[materialID])
+    alignOffset = offsetDict[materialID]
     materialShape = material[1]
     materialPMFSource = material[6]
+    materialSSDType = material[7]
     numericShape = 0
+    moleculePotentials = {}
     if materialShape=="cylinder":
         numericShape = 1
     #load surface-probe potential and HGE
     try:
-        freeEnergies = np.genfromtxt( potentialFolder+materialID+"_fev3.dat",delimiter=",")
+        freeEnergies0 = np.genfromtxt( potentialFolder+materialID+"_fev3.dat",delimiter=",")
+        freeEnergies = freeEnergies0.copy()
         freeEnergiesNames = np.genfromtxt( potentialFolder+materialID+"_fev3.dat",delimiter=",",names=True)
         freeEnergyHeader = list(freeEnergiesNames.dtype.names)
     except:
-        print("Could not locate potentials for", materialID)
+        print("Could not locate single-bead potentials for", materialID)
         continue
+    for molProbe in moleculeProbes:
+        try:
+            moleculeFreeEnergies0 = np.genfromtxt(potentialFolder+materialID+"_"+molProbe[1]+".dat",delimiter=",")
+            moleculePotentials[ molProbe[0] ] = moleculeFreeEnergies0
+        except:
+            print("Could not find ", molProbe[0], "for", materialID)
+    ''''
     try:
-        waterFreeEnergies = np.genfromtxt( potentialFolder+materialID+"_waterfe.dat",delimiter=",")
+        waterFreeEnergies0 = np.genfromtxt( potentialFolder+materialID+"_waterfe.dat",delimiter=",")
+        waterFreeEnergies = waterFreeEnergies0.copy()
     except:
         print("Could not locate water potentials for", materialID)
         continue      
+    try:
+        #print("Methane path: ", potentialFolder+materialID+"_methanefe_eps1.dat" )
+        methaneEnergies0 = np.genfromtxt( potentialFolder+materialID+"_methanefe.dat",delimiter=",")
+        methaneFreeEnergies = methaneEnergies0.copy()
+    except:
+        print("Could not locate methane potentials for", materialID)
+        continue     
+    '''
+    if os.path.exists("Datasets/SurfaceHGE/"+materialID+"-noise-"+str(noiseReplicas)+ ".csv") and args.forcerecalc == 0:
+        print("File for ", materialID, "already exists and force recalce = 0, skipping")
+        continue
+    surfaceOutfile=open("Datasets/SurfaceHGE/"+materialID+"-noise-"+str(noiseReplicas)+ ".csv","w")
+    surfaceOutfile.write( ",".join([str(a) for a in headerSet]) +"\n")
     for energyTarget in energyTargetSet:   
-        resSet = [ materialID, materialShape, numericShape ,materialPMFSource]   
-        for probe in allProbes:
-            if probe=="Water":
-                probeFreeEnergies = getValidRegion( waterFreeEnergies[:,(2,3)] )
-            else:
-                probeHeader = "U"+probe+"dkJmol"
-                probeNumber = freeEnergyHeader.index(probeHeader)
-                #print(probe,probeNumber,freeEnergies[:,(2,probeNumber)])
-                probeFreeEnergies  = getValidRegion( freeEnergies[:,(2,probeNumber)])
-                #print(probeFreeEnergies)
-            probeFinalEnergy = probeFreeEnergies[-1,1]
-            probeFreeEnergies[:,1] = probeFreeEnergies[:,1] - probeFinalEnergy
-            
-            r0Val = max(0.1, estimateValueLocation(probeFreeEnergies,energyTarget)[0])
-            probeHGE= HGECoeffs( probeFreeEnergies, r0Val, nMaxValAll)
-            probeHGE.insert(1, probeFinalEnergy)
-            resSet = resSet + probeHGE
-        resLine = ",".join([str(a) for a in resSet])
-        noiseoutfile.write(resLine+"\n")
-        #print( resLine )
-        if energyTarget == energyTargetBase:
-            outfile.write(resLine+"\n")
-                
+        for r0Val in r0ValRange:
+            for itNum in range(noiseReplicas):
+                resSet = [ materialID, materialShape, numericShape ,materialPMFSource,materialSSDType,alignOffset]   
+                for probeDef in allProbes:
+                    probe = probeDef[0]
+                    if probeDef[1] != "":
+                        probeFreeEnergies = getValidRegion(   np.copy( moleculePotentials[probeDef[0]] )[:,(2,3)] )
+                        #probeFreeEnergies = getValidRegion( waterFreeEnergies[:,(2,3)] )
+                    #elif probe=="Methane":
+                    #    probeFreeEnergies = getValidRegion( methaneFreeEnergies[:,(2,3)])
+                    else:
+                        probeHeader = "U"+probe+"dkJmol"
+                        probeNumber = freeEnergyHeader.index(probeHeader)
+                        #print(probe,probeNumber,freeEnergies[:,(2,probeNumber)])
+                        probeFreeEnergies  = getValidRegion( freeEnergies[:,(2,probeNumber)])
+                        #print(probeFreeEnergies)
+                    if itNum > 0:
+                        probeFreeEnergies = applyNoise(probeFreeEnergies)
+                    probeFinalEnergy = probeFreeEnergies[-1,1]
+                    probeFreeEnergies[:,1] = probeFreeEnergies[:,1] - probeFinalEnergy
+                    probeSubsetMask = probeFreeEnergies[:,0] >= r0Val 
+                    probeFreeEnergiesSubset = probeFreeEnergies[   probeSubsetMask  ]
+                    probeMinEnergy = np.amin( probeFreeEnergies[:,1])
+                    probeRightMinEnergy = np.amin( probeFreeEnergiesSubset[:,1])
+                    #r0Val =0.2 # max(0.1, estimateValueLocation(probeFreeEnergies,energyTarget)[0])
+                    probeHGE= HGECoeffs( probeFreeEnergies, r0Val, nMaxValAll)
+                    probeHGE.insert(1, probeFinalEnergy)
+                    probeHGE.append(probeMinEnergy)
+                    probeHGE.append(probeRightMinEnergy)
+                    resSet = resSet + probeHGE
+                resLine = ",".join([str(a) for a in resSet])
+                noiseoutfile.write(resLine+"\n")
+                surfaceOutfile.write(resLine+"\n")
+                #print(energyTarget, itNum, resLine )
+                if energyTarget == energyTargetBase and itNum == 0:
+                    outfile.write(resLine+"\n")
+    surfaceOutfile.close()            
                 
                 
 outfile.close()
