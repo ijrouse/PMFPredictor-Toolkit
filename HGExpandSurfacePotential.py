@@ -123,8 +123,8 @@ r0ValRange =  np.arange( minR0, maxR0, 0.01)
 noiseReplicas = 1
 potentialFolder = "SurfacePotentials/"
 
-outfile=open("Datasets/SurfacePotentialCoefficients-aug14.csv","w")
-noiseoutfile=open("Datasets/SurfacePotentialCoefficientsNoise-"+str(noiseReplicas)+"-aug14.csv","w")
+outfile=open("Datasets/SurfacePotentialCoefficients-sep01.csv","w")
+noiseoutfile=open("Datasets/SurfacePotentialCoefficientsNoise-"+str(noiseReplicas)+"-aug30.csv","w")
 ljHGELabels = []
 electroHGELabels = []
 waterHGELabels = []
@@ -134,10 +134,24 @@ KHGELabels=[]
 ClHGELabels=[]
 energyTargetBase = 25
 
+
+'''
+["C",0.339,0.3598,0,0],
+["K",0.314264522824 ,  0.36401,1,0],
+["Cl",0.404468018036 , 0.62760,-1,0],
+["C2A",0.2,0.3598,0,0],
+["C4A",0.4,0.3598,0,0],
+["CPlus",0.339,0.3598,0.5,0],
+["CMinus",0.339,0.3598,-0.5,0],
+["CMoreLJ",0.339,0.5,0,0],
+["CLessLJ",0.339,0.2,0,0]
+
+'''
+
 #energyTargetSet = [5, 10,15,20,25, 30, 35,40]
 energyTargetSet = [25]
-pointProbes = [ ["C",""] ,  ["K",""], ["Cl",""] ,["C2A",""],["C10A",""]  ]
-moleculeProbes = [ ["Methane","methanefe"]  ,["Water", "waterfe"] ,["WaterUCD","waterUCDfe"] ,["CarbonRing","carbringfe"]]
+pointProbes = [ ["C",""] ,  ["K",""], ["Cl",""] ,["C2A",""],["C4A",""] ,["CPlus",""],["CMinus",""],["CMoreLJ",""],["CLessLJ",""] ,["CMin",""], ["CPlusMin",""],["CMinusMin",""]]
+moleculeProbes = [ ["Methane","methanefe"]   ,["WaterFull","waterUCDfe"] ,["CarbonRing","carbringfe"], ["CLine3","cline3fe"]]
 
 allProbes = moleculeProbes + pointProbes
 allLabels = []
@@ -151,7 +165,7 @@ for i in range(0,nMaxValAll+1):
 '''
 
 offsetDict = {}
-offsetDictFile = open("Datasets/SurfaceOffsetDataFEDists.csv","r")
+offsetDictFile = open("Datasets/SurfaceOffsetData.csv","r")
 firstline =0
 offsetDictFileLines=offsetDictFile.readlines()
 for line in offsetDictFileLines:
@@ -159,7 +173,7 @@ for line in offsetDictFileLines:
         firstline = 1
         continue
     lineParts =  line.strip().split(",")
-    offsetDict[lineParts[0]] = float(lineParts[3]) 
+    offsetDict[lineParts[0]] = float(lineParts[2]) 
 offsetDictFile.close()
 
 
@@ -191,9 +205,9 @@ for material in materialSet:
         numericShape = 1
     #load surface-probe potential and HGE
     try:
-        freeEnergies0 = np.genfromtxt( potentialFolder+materialID+"_fev3.dat",delimiter=",")
+        freeEnergies0 = np.genfromtxt( potentialFolder+materialID+"_fev5.dat",delimiter=",")
         freeEnergies = freeEnergies0.copy()
-        freeEnergiesNames = np.genfromtxt( potentialFolder+materialID+"_fev3.dat",delimiter=",",names=True)
+        freeEnergiesNames = np.genfromtxt( potentialFolder+materialID+"_fev5.dat",delimiter=",",names=True)
         freeEnergyHeader = list(freeEnergiesNames.dtype.names)
     except:
         print("Could not locate single-bead potentials for", materialID)

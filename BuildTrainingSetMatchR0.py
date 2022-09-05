@@ -34,7 +34,7 @@ surfaceCoefficientFile.close()
 numReplicates = 1
 
 if numReplicates==1:
-    chemicalCoefficientFile = open("Datasets/ChemicalPotentialCoefficients-aug12.csv","r")
+    chemicalCoefficientFile = open("Datasets/ChemicalPotentialCoefficients-aug26.csv","r")
 else:
     chemicalCoefficientFile = open("Datasets/ChemicalPotentialCoefficientsNoise10.csv","r")
 chemHeader=chemicalCoefficientFile.readline().strip().split(",")
@@ -47,7 +47,7 @@ for chemLine in knownChems:
 chemicalCoefficientFile.close()
 
 if numReplicates==1:
-    surfaceCoefficientFile = open("Datasets/SurfacePotentialCoefficients-aug14.csv","r")
+    surfaceCoefficientFile = open("Datasets/SurfacePotentialCoefficients-sep01.csv","r")
 else:
     surfaceCoefficientFile = open("Datasets/SurfacePotentialCoefficientsNoise-10.csv","r")
 surfaceHeader=surfaceCoefficientFile.readline().strip().split(",")
@@ -91,7 +91,7 @@ for extraPMFFilename in extraPMFFiles:
     extraFile.close()
 
 
-outputFile = open("Datasets/TrainingData-r0matched-aug14.csv","w")
+outputFile = open("Datasets/TrainingData-r0matched-aug30.csv","w")
 
 #print(pmfCoefficientFileLines[-1])
 print(",".join(headerSet))

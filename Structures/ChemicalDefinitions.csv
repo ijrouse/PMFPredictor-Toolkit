@@ -81,6 +81,8 @@ HSPSCA-AC,Cc1c[nH]c[nH+]1,1,protonated HIS side chain
 MAMM-AC,C[NH3+],1,ethanolamine
 GLY-AC,NCC(=O)O,0,glycine
 PRO-AC,O=C(O)C1CCCN1,0,proline
+GLY-JS,NCC(=O)O,0,glycine
+PRO-JS,O=C(O)C1CCCN1,0,proline
 GANSCA-AC,CCC(=O)O,0,protonated GLU side chain
 GLUPSCA-AC,CCC(=O)O,0,protonated GLU side chain
 ASPPSCA-AC,CC(=O)O,0,protonated ASP side chain
@@ -184,3 +186,5 @@ CS-13867413-AC,COC(=O)CC<HASH>N,0,methyl cyanoacetate
 CS-61591-AC,C(C(CO)N)O,0,serinol
 CS-30663-AC,C/N=[N+](\C)/[O-],0,azoxymethane
 CAFF-AC,Cn1cnc2n(C)c(=O)n(C)c(=O)c12,0,caffeine
+Water,O,0,water-tip3-noh
+WaterUCD,O,0,water-tip3-withH

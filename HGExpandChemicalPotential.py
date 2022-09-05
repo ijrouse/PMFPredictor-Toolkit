@@ -88,8 +88,8 @@ r0ValAll = 0.25
 
 potentialFolder = "ChemicalPotentials/"
 
-outfile=open("Datasets/ChemicalPotentialCoefficients-aug12.csv","w")
-noiseoutfile=open("Datasets/ChemicalPotentialCoefficientsNoise"+str(noiseReplicas)+"-aug12.csv","w")
+outfile=open("Datasets/ChemicalPotentialCoefficients-aug26.csv","w")
+noiseoutfile=open("Datasets/ChemicalPotentialCoefficientsNoise"+str(noiseReplicas)+"-aug26.csv","w")
 
 #energyTargetSet = [ 10,15,20,25, 30, 35,40]
 energyTargetSet = [25]
@@ -99,16 +99,34 @@ maxR0 = 1.0
 minR0 = 0.05
 r0ValRange =  np.arange( minR0, maxR0, 0.01)
 
-allProbes = ["C", "Water", "WaterUCD", "K", "Cl","Slab", "C2A","C10A"]
+
+#["methane", methaneProbe],
+#["cline", clineProbe]
+pointProbes=  [ ["C",""],    ["K",""], ["Cl",""] ,["Slab",""], ["C2A",""] ,["C4A",""]  , ["CPlus",""] , ["CMinus",""], ["CMoreLJ",""],["CLessLJ",""]  ,["CEps20",""] ,["CMin",""]    ]
+moleculeProbes = [ ["Water","waterfe"]  ,["WaterUCD","waterUCDfe"] , ["Methane","methanefe"] ,["CLine","clinefe"] ,["CarbRing","carbringfe"] ]
+allProbes = pointProbes + moleculeProbes
 allLabels = []
 
-
+'''
 for probeLabel in allProbes:
     allLabels.append("Chem"+probeLabel+"ProbeR0")
     for i in range(0,nMaxValAll+1):
         allLabels.append("Chem"+probeLabel+"ProbeC"+str(i))
     allLabels.append("Chem"+probeLabel+"ProbeEMin")
     allLabels.append("Chem"+probeLabel+"ProbeRightEMin")    
+'''
+
+
+for probeDef in allProbes:
+    probeLabel = probeDef[0]
+    probeFile = probeDef[1]
+    allLabels.append("Chem"+probeLabel+"ProbeR0")
+    for i in range(0,nMaxValAll+1):
+        allLabels.append("Chem"+probeLabel+"ProbeC"+str(i))
+    allLabels.append("Chem"+probeLabel+"ProbeEMin")
+    allLabels.append("Chem"+probeLabel+"ProbeRightEMin")
+
+
 
 #headerSet =  [ "SurfID", "shape", "numericShape", "source",  "SurfCProbeR0" ] + CHGELabels + ["SurfKProbeR0"] + KHGELabels + ["SurfClProbeR0"] + ClHGELabels  + ["SurfWaterR0"]+ waterHGELabels
 headerSet = ["ChemID", "SMILES" ] + allLabels
@@ -120,28 +138,34 @@ materialNotFoundList = []
 for material in materialSet:
     materialID = material[0]
     chemSMILES = material[1]
+    moleculePotentials = {}
     print("Starting chemical ", materialID)
     #load chem-probe potential and HGE
     try:
-        freeEnergies0 = np.genfromtxt( potentialFolder+materialID+"_fev3.dat",delimiter=",")
+        freeEnergies0 = np.genfromtxt( potentialFolder+materialID+"_fev5.dat",delimiter=",")
         freeEnergies = freeEnergies0.copy()
-        freeEnergiesNames = np.genfromtxt( potentialFolder+materialID+"_fev3.dat",delimiter=",",names=True)
+        freeEnergiesNames = np.genfromtxt( potentialFolder+materialID+"_fev5.dat",delimiter=",",names=True)
         freeEnergyHeader = list(freeEnergiesNames.dtype.names)
         print(freeEnergyHeader)
     except:
         print("Free energy file not found for ", materialID)
         materialNotFoundList.append( material)
         continue
-    try:
-        waterFreeEnergies0 = np.genfromtxt( potentialFolder+materialID+"_waterfe.dat",delimiter=",")
-        waterFreeEnergies = waterFreeEnergies0.copy()
-        waterFreeEnergiesUCD0 = np.genfromtxt( potentialFolder+materialID+"_waterUCDfe.dat",delimiter=",")
-        waterFreeEnergiesUCD = waterFreeEnergiesUCD0.copy()
+    for molProbe in moleculeProbes:
+        try:
+            moleculeFreeEnergies0 = np.genfromtxt( potentialFolder+materialID+"_"+molProbe[1]+".dat",delimiter=",")
+            moleculePotentials[ molProbe[0] ] = moleculeFreeEnergies0
+        except:
+            print("Could not find ", molProbe[0], "for", materialID)
+        #waterFreeEnergies0 = np.genfromtxt( potentialFolder+materialID+"_waterfe.dat",delimiter=",")
+        #waterFreeEnergies = waterFreeEnergies0.copy()
+        #waterFreeEnergiesUCD0 = np.genfromtxt( potentialFolder+materialID+"_waterUCDfe.dat",delimiter=",")
+        #waterFreeEnergiesUCD = waterFreeEnergiesUCD0.copy()
 
 
-    except:
-        print("Could not locate water potentials for", materialID)
-        continue      
+        # except:
+        #print("Could not locate water potentials for", materialID)
+        #continue      
 
     if os.path.exists("Datasets/ChemicalHGE/"+materialID+"-noise-"+str(noiseReplicas)+".csv") and args.forcerecalc == 0:
         print("File for ", materialID, "already exists and force recalce = 0, skipping")
@@ -152,13 +176,17 @@ for material in materialSet:
     for r0Val in r0ValRange:   
         for itNum in range(noiseReplicas):
             resSet = [materialID, chemSMILES]   
-            freeEnergies = freeEnergies0.copy()
-            waterFreeEnergies = waterFreeEnergies0.copy()
-            for probe in allProbes:
-                if probe=="Water":
-                    probeFreeEnergies = getValidRegion( waterFreeEnergies[:,(2,3)] )
-                elif probe=="WaterUCD":
-                    probeFreeEnergies = getValidRegion (waterFreeEnergiesUCD[:,(2,3)])
+            #freeEnergies = freeEnergies0.copy()
+            #waterFreeEnergies = waterFreeEnergies0.copy()
+            for probeDef in allProbes:
+                probe = probeDef[0]
+                if probeDef[1] != "":
+                    probeFreeEnergies = getValidRegion( np.copy( moleculePotentials[probeDef[0] ])[:,(2,3)])
+                #else:
+                #if probe=="Water":
+                #    probeFreeEnergies = getValidRegion( waterFreeEnergies[:,(2,3)] )
+                #elif probe=="WaterUCD":
+                #    probeFreeEnergies = getValidRegion (waterFreeEnergiesUCD[:,(2,3)])
                 else:
                     probeHeader = "U"+probe+"dkJmol"
                     probeNumber = freeEnergyHeader.index(probeHeader)

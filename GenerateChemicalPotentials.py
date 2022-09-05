@@ -82,9 +82,11 @@ pointProbes =[
 ["Cl",0.404468018036 , 0.62760,-1],
 ["C2A",0.2,0.3598,0],
 ["C4A",0.4,0.3598,0],
-["C6A",0.6,0.3598,0],
-["C8A",0.8,0.3598,0],
-["C10A",1.0,0.3598,0]
+["CPlus",0.339,0.3598,0.5],
+["CMinus",0.339,0.3598,-0.5],
+["CMoreLJ",0.339,0.5,0],
+["CLessLJ",0.339,0.2,0],
+["CEps20",0.399,20,0]
 ]
 
 
@@ -109,14 +111,44 @@ methaneProbe=[
 [0.217,0.006,0.001,0.026700,1.00800,2.60018e-01,8.70272e-02]
 ]
 
+clineProbe =[
+[0.0, 0.0, -0.75, 0, 12.0100, 3.39771e-01,4.51035e-01],
+[0.0, 0.0, -0.5, 0, 12.0100, 3.39771e-01,4.51035e-01],
+[0.0, 0.0, -0.25, 0, 12.0100, 3.39771e-01,4.51035e-01],
+[0.0, 0.0, 0, 0, 12.0100, 3.39771e-01,4.51035e-01],
+[0.0, 0.0, 0.25, 0, 12.0100, 3.39771e-01,4.51035e-01],
+[0.0, 0.0, 0.5, 0, 12.0100, 3.39771e-01,4.51035e-01],
+[0.0, 0.0, 0.75, 0, 12.0100, 3.39771e-01,4.51035e-01]
+]
+
+
+
+sixcarbProbe=[
+
+[0.099,0.000,0.001,0,12.01000,3.31521e-01,4.13379e-01],
+[0.028,-0.120,0.001,0,12.01000,3.31521e-01,4.13379e-01],
+[-0.112,-0.120,-0.0005,0,12.01000,3.31521e-01,4.13379e-01],
+[-0.182,0.000,-0.001,0,12.01000,3.31521e-01,4.13379e-01],
+[-0.112,0.121,-0.0005,0,12.01000,3.31521e-01,4.13379e-01],
+[0.028,0.121,0.0005,0,12.01000,3.31521e-01,4.13379e-01]
+
+]
+
+
 moleculeProbes = [
 ["water", waterProbe], 
-["waterUCD", waterUCDProbe]
+["waterUCD", waterUCDProbe],
+["methane", methaneProbe],
+["cline", clineProbe],
+["carbring", sixcarbProbe]
+
 ]
 
 feFileHeader = "r[nm],d[nm],daligned[nm],U(d)[kj/mol],V(d)[e/nm],USlab(d)[kJ/mol]"
 for probe in pointProbes:
     feFileHeader = feFileHeader+",U"+probe[0]+"(d)[kJ/mol]"
+for probe in pointProbes:
+    feFileHeader = feFileHeader+",U"+probe[0]+"Min(d)[kJ/mol]"
 
 
 
@@ -174,14 +206,18 @@ for target in targetSet:
     if surfaceType == "sphere":
         numc1=16
         numc2=9
+        thetaDelta = 15.0
         c1Range = np.linspace(0,2*np.pi, num = numc1, endpoint=False)
-        c2Range = np.linspace(0, np.pi, num = numc2, endpoint=True)
+        #c2Range = np.linspace(0, np.pi, num = numc2, endpoint=True)
+        c2Range = np.arange( thetaDelta, 180.0 - thetaDelta, thetaDelta)*np.pi / 180.0
+        numc2 = len(c2Range)
         c1grid,c2grid = np.meshgrid(   c1Range, c2Range) 
         sigmaBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,5] , (numc1,numc2,len(atomNumericData)) ))
         epsBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,6] , (numc1,numc2,len(atomNumericData)) ))
         chargeBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,3] , (numc1,numc2,len(atomNumericData)) ))
         sigmaBroadcastSlab = 0.5*(sigmaBroadcast + slabBeadSigma)
         epsBroadcastSlab = np.sqrt( epsBroadcast*slabBeadEpsilon)
+        pointWeights = np.sin(c2grid)
     else:
         numc1=23
         numc2=23
@@ -194,13 +230,14 @@ for target in targetSet:
         chargeBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,3] , (numc1,numc2,len(atomNumericData)) ))
         sigmaBroadcastSlab = 0.5*(sigmaBroadcast + slabBeadSigma)
         epsBroadcastSlab = np.sqrt( epsBroadcast*slabBeadEpsilon)
+        pointWeights = np.ones_like(c2grid)
     resList = []
     waterResList = []
     lastInfPoint = rRange[0] - 1
     lastWaterInfPoint = lastInfPoint
     
     
-    feOutput = outputFolder+"/" +targetName+"_fev3.dat"
+    feOutput = outputFolder+"/" +targetName+"_fev5.dat"
     skipProbes = 0
     if os.path.exists(feOutput) and args.forcerecalc == 0:
         skipProbes = 1
@@ -232,7 +269,7 @@ for target in targetSet:
             ones = 1 + np.zeros_like(slabPotentialTerms)
         
         
-            freeEnergy=-conversionFactor * np.log( np.sum(   np.exp( -allContributions / conversionFactor) )  / np.sum(ones) )
+            freeEnergy=-conversionFactor * np.log( np.sum( pointWeights *  np.exp( -allContributions / conversionFactor) )  / np.sum(pointWeights * ones) )
             if np.any( slabPotentialTerms < -300) or np.all(slabPotentialTerms > 200):
                slabFreeEnergy = np.amin(slabPotentialTerms)
             else:
@@ -240,6 +277,7 @@ for target in targetSet:
             electrostatic = np.sum( electricContributions * np.exp( -allContributions / conversionFactor) ) / np.sum(np.exp( -allContributions / conversionFactor))
             
             probeFESet = []
+            probeSimpleSet = []
             foundInf = 0
             allInf = 1
             cInf = 0
@@ -250,26 +288,31 @@ for target in targetSet:
                 scaledDists = sigmaCombined/distArray 
                 ljPotential = np.sum( 4 * epsCombined * (scaledDists**12 - scaledDists**6 ), axis=0) #sum over atoms
                 totalPotential = electrostaticPotential + ljPotential
-            
-            
-                if np.any( totalPotential < -300     ):
+                probeFreeEnergy=-conversionFactor * np.log( np.sum( pointWeights *  np.exp( -totalPotential / conversionFactor) )  / np.sum( pointWeights *  ones) )
+                #probeSimpleEnergy=  np.sum( pointWeights * totalPotential  )  / np.sum( pointWeights *  ones) 
+                if not np.isfinite(probeFreeEnergy):
                     probeFreeEnergy = np.amin(totalPotential)
-                elif np.all(totalPotential > 200):
-                    probeFreeEnergy = np.amin(totalPotential)
-                else:
-                    probeFreeEnergy=-conversionFactor * np.log( np.sum(   np.exp( -totalPotential / conversionFactor) )  / np.sum(ones) )            
+                #if not np.isfinite(probeSimpleEnergy):
+                probeSimpleEnergy = np.amin(totalPotential)
+                #if np.any( totalPotential < -300     ):
+                #    probeFreeEnergy = np.amin(totalPotential)
+                #elif np.all(totalPotential > 200):
+                #    probeFreeEnergy = np.amin(totalPotential)
+                #else:
+                #    probeFreeEnergy=-conversionFactor * np.log( np.sum( pointWeights *  np.exp( -totalPotential / conversionFactor) )  / np.sum( pointWeights *  ones) )            
                 
                 #probeFreeEnergy=-conversionFactor * np.log( np.sum(   np.exp( -totalPotential / conversionFactor) )  / np.sum(ones) )
                 #print(r, probe, probeFreeEnergy)
                 probeFESet.append(probeFreeEnergy)
+                probeSimpleSet.append(probeSimpleEnergy)
                 #if np.isfinite(freeEnergy):
                 #print(r-r0Start,freeEnergy)
-            resList.append( [r,r-r0Start, r-r0Start, freeEnergy,electrostatic,slabFreeEnergy]+ probeFESet)
+            resList.append( [r,r-r0Start, r-r0Start, freeEnergy,electrostatic,slabFreeEnergy]+ probeFESet + probeSimpleSet)
             if not np.isfinite( probeFESet[0]):
                 lastInfPoint = r
         resArray = np.array(resList)
         resArray = resArray[    resArray[:,0] > lastInfPoint ]
-        np.savetxt( outputFolder+"/" +targetName+"_fev3.dat", resArray, fmt='%2.7f',delimiter=",", header=feFileHeader)
+        np.savetxt( feOutput, resArray, fmt='%2.7f',delimiter=",", header=feFileHeader)
     
 
     for moleculeProbeDef in moleculeProbes:
@@ -286,8 +329,10 @@ for target in targetSet:
         for r in rRangeWater:            
             runningNumerator = 0
             runningDenominator = 0
-            waterMin = 1e12
-            for theta in  np.linspace(0,np.pi, num = 5, endpoint=True) :
+            waterMin = 1e20
+            thetaDelta = 15
+            thetaRange = np.arange( thetaDelta, 180 , thetaDelta)*np.pi/180.0
+            for theta in  thetaRange:
                 for phi in np.linspace(0,2*np.pi, num = 8, endpoint=False):
                     rotateMatrixInternal = rotateMatrix(np.pi - theta,-phi)
                     allContributions = 0
@@ -313,8 +358,8 @@ for target in targetSet:
                         allContributions += (electroToKJMol*atom[3]*electricContributions + ljContributions)
                     waterMin = min( waterMin, np.amin(allContributions)) #this is used only if there's no better value under the assumption its either the least bad or most favourable
                     ones = (  1 + np.zeros_like(allContributions) )
-                    runningNumerator += np.sum(  np.exp(-allContributions/conversionFactor)     )* np.sin(theta)
-                    runningDenominator += np.sum(ones * np.sin(theta))
+                    runningNumerator += np.sum( pointWeights *  np.exp(-allContributions/conversionFactor)     )* np.sin(theta)
+                    runningDenominator += np.sum(pointWeights *ones * np.sin(theta))
         
             waterFreeEnergy=-conversionFactor * np.log( runningNumerator/runningDenominator)
             if not np.isfinite(waterFreeEnergy):

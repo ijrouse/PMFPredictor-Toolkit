@@ -257,7 +257,7 @@ for target in targetSet:
                     #print( pmfVar , "beats", currentBestVar, "at index", i)
                     currentBestMaxIndex = i
                     currentBestVar = pmfVar
-            resLine = [material,chemical, pmfSubset[0,1] , BuildHGEFromCoeffs(pmfSubset[0,0]  , hgeSet,1)[0], offsetApplied,resolution ] + hgeSet  + [currentBestMaxIndex, currentBestVar] + [rEMinVal, EMinVal] + differentialCoeffs
+            resLine = [material,chemical, pmfSubset[0,1] , BuildHGEFromCoeffs(pmfSubset[0,0]  , hgeSet,1)[0], offsetApplied,resolution ] + hgeSet  + [currentBestMaxIndex, currentBestVar] + [rEMinVal, EMinVal] 
             #fitData= BuildHGEFromCoeffs(pmfSubset[:,0]  , hgeSet,1)
             if pmfSubset[0,1] < maximumEnergy:
                 #plt.plot(pmfSubset[:,0],fitData)

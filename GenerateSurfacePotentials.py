@@ -13,6 +13,8 @@ import numpy.linalg as npla
 
 parser = argparse.ArgumentParser(description="Parameters for GenerateChemicalPotentials")
 parser.add_argument("-f","--forcerecalc", type=int,default=0,help="If 1 then potentials are recalculated even if their table already exists")
+parser.add_argument("-i","--initial", type=int, default=0,help="Initial structure to start calculating for multiprocessing")
+parser.add_argument("-s","--step", type=int, default=1,help="Stride for slicing for multiprocessing")
 args = parser.parse_args()
 
 
@@ -94,6 +96,7 @@ dielectricConst = 1
 
 #point probes. the first must be left unchanged because this is used to determine the surface level.
 #name, sigma,epsilon,   charge, LJ model (=0 for point, =1 for flat disk of radius 0.5nm)
+'''
 pointProbes =[
 ["C",0.339,0.3598,0,0 ],
 ["K",0.314264522824 ,  0.36401,1,0],
@@ -103,6 +106,19 @@ pointProbes =[
 ["C6A", 0.6, 0.3598,0,0],
 ["C8A", 0.8, 0.3598,0,0],
 ["C10A",1.0,0.3598,0,0]
+]
+'''
+
+pointProbes =[
+["C",0.339,0.3598,0,0],
+["K",0.314264522824 ,  0.36401,1,0],
+["Cl",0.404468018036 , 0.62760,-1,0],
+["C2A",0.2,0.3598,0,0],
+["C4A",0.4,0.3598,0,0],
+["CPlus",0.339,0.3598,0.5,0],
+["CMinus",0.339,0.3598,-0.5,0],
+["CMoreLJ",0.339,0.5,0,0],
+["CLessLJ",0.339,0.2,0,0]
 ]
 
 #Define the molecular probe separately
@@ -142,17 +158,39 @@ sixcarbProbe=[
 
 ]
 
+
+clineProbe =[
+[0.0, 0.0, -0.75, 0, 12.0100, 3.39771e-01,4.51035e-01],
+[0.0, 0.0, -0.5, 0, 12.0100, 3.39771e-01,4.51035e-01],
+[0.0, 0.0, -0.25, 0, 12.0100, 3.39771e-01,4.51035e-01],
+[0.0, 0.0, 0, 0, 12.0100, 3.39771e-01,4.51035e-01],
+[0.0, 0.0, 0.25, 0, 12.0100, 3.39771e-01,4.51035e-01],
+[0.0, 0.0, 0.5, 0, 12.0100, 3.39771e-01,4.51035e-01],
+[0.0, 0.0, 0.75, 0, 12.0100, 3.39771e-01,4.51035e-01]
+]
+
+cline3Probe =[
+[0.0, 0.0, -0.25, 0, 12.0100, 3.39771e-01,4.51035e-01],
+[0.0, 0.0, 0, 0, 12.0100, 3.39771e-01,4.51035e-01],
+[0.0, 0.0, 0.25, 0, 12.0100, 3.39771e-01,4.51035e-01]
+]
+
+
+
 moleculeProbes = [
 ["water", waterProbe], 
 ["methane",methaneProbe], 
 ["waterUCD", waterUCDProbe],
-["carbring", sixcarbProbe]
+["carbring", sixcarbProbe],
+["cline", clineProbe],
+["cline3",cline3Probe]
 ]
 
 feFileHeader = "r[nm],d[nm],daligned[nm]"
 for probe in pointProbes:
     feFileHeader = feFileHeader+",U"+probe[0]+"(d)[kJ/mol]"
-
+for probe in pointProbes:
+    feFileHeader = feFileHeader+",U"+probe[0]+"Min(d)[kJ/mol]"
 conversionFactor = ( 8.314/1000.0) * temperature
 
 planeScanHalfLength = 0.5
@@ -176,25 +214,34 @@ pmfAlignEnergyDefault = 35.0
 #input data has the form
 #label, shape,  energy alignment value, skip energy alignment,   manual energy point at which to align the PMF, skip PMF alignment
 offsetResultFile = open("Datasets/SurfaceOffsetData.csv","w")
-offsetResultFile.write("Material,ZeroLevelOffset[nm],FEOffset[nm],PMFOffset[nm]\n")
+offsetResultFile.write("Material,ZeroLevelOffset[nm],FEOffset[nm],PMFOffset[nm],SSDDelta[nm]\n")
 
 surfaceTargetSet = np.genfromtxt("Structures/SurfaceDefinitions.csv",dtype=str,delimiter=",")
 if surfaceTargetSet.ndim == 1:
     surfaceTargetSet = np.array([surfaceTargetSet])
 
-for surfaceTarget in surfaceTargetSet[21::5] :
+for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
     surfaceName = surfaceTarget[0]
 
-
+    ssdRefDist = 0
     surfaceType = surfaceTarget[1]
     alignPointEnergy = float(surfaceTarget[2])
     surfaceAlignOverride = int(surfaceTarget[3])
     pmfAlignEnergy = float(surfaceTarget[4])
     pmfAlignOverride = int(surfaceTarget[5])
-    ssdDefType = int(surfaceTarget[7]) #0 = PMFs are defined relative to a flat surface, 1 = PMFs are defined using the minimum-z-distance convention, 2 = PMFs are defined relative to the COM-COM distance - half a slab width.
+    ssdDefType = int(surfaceTarget[7]) #0 = PMFs are defined relative to a flat surface, 1 = PMFs are defined using the minimum-z-distance convention, 2 = PMFs are defined relative to the COM-COM(Plane) distance - half a slab width.
+    if surfaceTarget[8]=="sw":
+        ssdRefDist = "sw"
+    elif surfaceTarget[8]=="?":
+        ssdRefDist = "?"
+    else:
+        ssdRefDist = float(surfaceTarget[8])
     surfaceInputFile = surfaceName+"_combined.csv"
     if surfaceType=="cylinder":
-        r0Start = 0.75
+        if ssdRefDist!="?":
+            r0Start = ssdRefDist
+        else:
+            r0Start = 0.75
     else:
         r0Start = 0.00
     # indexes: 0 = numeric ID, 1 = atomID , 2= atom type, 3= x, 4 = y, 5 = z, 6 = charge, 7= mass, 8 = sigma, 9 = epsilon
@@ -211,15 +258,23 @@ for surfaceTarget in surfaceTargetSet[21::5] :
         #cylinders: these are already aligned around z=0, so just set the centre of mass to the z=0 plane
         atomNumericData[:,2] = atomNumericData[:,2] - np.sum(atomNumericData[:,2] * atomNumericData[:,4])/np.sum(atomNumericData[:,4])
         #zeroLevelOffset = np.amax(atomNumericData[   atomNumericData[:,6] > 0.1 ][:,2]  )   
-        zeroLevelAtoms = np.logical_and(   np.logical_and( atomNumericData[:,6] > 0.1 , nmData[:,2] != "OHW"   ) , nmData[:,2] != "OFW")
-        zeroLevelOriginalOffset = np.amax(atomNumericData[  atomNumericData[:,6] > 0.1  ][:,2]  )
+        zeroLevelAtoms = np.logical_and(   np.logical_and( atomNumericData[:,6] > 0.05 , nmData[:,2] != "OHW"   ) , nmData[:,2] != "OFW")
+        zeroLevelOriginalOffset = np.amax(atomNumericData[  atomNumericData[:,6] > 0.05  ][:,2]  )
         zeroLevelOffset = np.amax(atomNumericData[  zeroLevelAtoms ][:,2]  ) 
 
         if surfaceType == "plane":
             atomNumericData[:,0] = atomNumericData[:,0] - np.sum(atomNumericData[:,0] * atomNumericData[:,4])/np.sum(atomNumericData[:,4])
             atomNumericData[:,1] = atomNumericData[:,1] - np.sum(atomNumericData[:,1] * atomNumericData[:,4])/np.sum(atomNumericData[:,4])
-            atomNumericData[:,2] = atomNumericData[:,2] - zeroLevelOffset  #zero level for the purpose of generating the potential to make sure we start "inside" the NP, this is recorded for archival purposes 
+            atomNumericData[:,2] = atomNumericData[:,2] - zeroLevelOffset  #zero level for the purpose of generating the potential to make sure we start "inside" the NP, this is recorded for archival purposes. At this point, z=0 is the upper layer of heavy atoms
+            slabWidth = np.amax(  atomNumericData[:,2] ) - np.amin( atomNumericData[:,2])
+            zUpperSurface = np.amax( atomNumericData[:,2]) 
+
+            
         newZCOM = np.sum(atomNumericData[:,2] * atomNumericData[:,4])/np.sum(atomNumericData[:,4])
+        if ssdRefDist == "sw":
+            ssdRefDist = zUpperSurface  - newZCOM - slabWidth/2.0        
+        
+        
         #print(newZCOM)
         rRange =r0Start + np.arange(newZCOM, 2.0, 0.005) #actual resolution  0.005
         if surfaceType == "cylinder":
@@ -251,7 +306,8 @@ for surfaceTarget in surfaceTargetSet[21::5] :
         lastWaterInfPoint = lastInfPoint
         
     skipPointProbe = 0
-    if os.path.exists( outputFolder+"/" +surfaceName+"_fev3.dat") and args.forcerecalc == 0:
+    outputTarget = outputFolder+"/" + surfaceName+"_fev5.dat"
+    if os.path.exists( outputTarget) and args.forcerecalc == 0:
         skipPointProbe = 1
         print(surfaceName+": Skipping point probe")
     else:
@@ -279,6 +335,7 @@ for surfaceTarget in surfaceTargetSet[21::5] :
             #freeEnergy=-conversionFactor * np.log( np.sum(   np.exp( -allContributions / conversionFactor) )  / np.sum(ones) )
             #electrostatic = np.sum( electricContributions * np.exp( -allContributions / conversionFactor) ) / np.sum(np.exp( -allContributions / conversionFactor))
             probeFESet = []
+            probeSimpleSet = []
             foundInf = 0
             allInf = 1
             cInf = 0
@@ -303,27 +360,32 @@ for surfaceTarget in surfaceTargetSet[21::5] :
                 #print(electrostaticPotential)
 
                 totalPotential = electrostaticPotential + ljPotential
+                probeFreeEnergy=-conversionFactor * np.log( np.sum(   np.exp( -totalPotential / conversionFactor) )  / np.sum(ones) )
+                if not np.isfinite(probeFreeEnergy):
+                    probeFreeEnergy = np.amin(totalPotential)
+                probeSimpleEnergy = np.amin(totalPotential)
                 #print(np.sum(totalPotential))
                 #print(r, np.sum(   np.exp( -totalPotential / conversionFactor) ) , -conversionFactor * np.log( np.sum(   np.exp( -totalPotential / conversionFactor) )  / np.sum(ones)))
                 #calculate the free energy using the standard expression if it's safe to do so and min/max if not. 
-                if np.any( totalPotential < -300     ):
-                    probeFreeEnergy = np.amin(totalPotential)
-                elif np.all(totalPotential > 200):
-                    probeFreeEnergy = np.amin(totalPotential)
-                else:
-                    probeFreeEnergy=-conversionFactor * np.log( np.sum(   np.exp( -totalPotential / conversionFactor) )  / np.sum(ones) )
+                #if np.any( totalPotential < -300     ):
+                #    probeFreeEnergy = np.amin(totalPotential)
+                #elif np.all(totalPotential > 200):
+                #    probeFreeEnergy = np.amin(totalPotential)
+                #else:
+                #    probeFreeEnergy=-conversionFactor * np.log( np.sum(   np.exp( -totalPotential / conversionFactor) )  / np.sum(ones) )
                 
                 #print(r, probe, probeFreeEnergy)
                 probeFESet.append(probeFreeEnergy)
+                probeSimpleSet.append(probeSimpleEnergy)                
                 #print( r, probe[0], probeFreeEnergy)
             if not np.isfinite( probeFESet[0]):
                 lastInfPoint = r
-            resList.append( [r,r-r0Start, r-r0Start ] + probeFESet)
+            resList.append( [r,r-r0Start, r-r0Start ] + probeFESet + probeSimpleSet)
             resArray = np.array(resList)
             resArray = resArray[    resArray[:,0] > lastInfPoint ]
     else:
         #load in the already calculated probe potentials
-        resArray = np.genfromtxt(outputFolder+"/" + surfaceName+"_fev3.dat",delimiter=",",skip_header=1)
+        resArray = np.genfromtxt(outputTarget,delimiter=",",skip_header=1)
         lastInfPoint = resArray[0,0] #FIX
         resArray[:,2] = resArray[:,1]
 
@@ -335,12 +397,19 @@ for surfaceTarget in surfaceTargetSet[21::5] :
 
     #While we're processing the structure we also harmonise the PMFs to the definition of the surface given here
     #    ssdDefType #0 = PMFs are defined relative to a flat surface, 1 = PMFs are defined using the minimum-z-distance convention, 2 = PMFs are defined relative to the COM-COM distance - half a slab width.
+    #Update: type 2 is essentially type 1 as it's a flat plane, just potentially defined at a different point
     #Convention: before fitting the PMF, we subtract PMFDelta from all r values to shift into the frame of reference relative to the potential-plane.
+    
+    '''
+    if surfaceType == "plane":
+        ssdDelta = ssdRefDist
+    else:
+        ssdDelta = 0
     if ssdDefType == 0:
-        pmfDelta = requiredOffsetFE
+        pmfDelta = requiredOffsetFE + ssdDelta
     elif ssdDefType == 1:
         print(surfaceName, " zero level original offset", zeroLevelOriginalOffset, " with exclusions" , zeroLevelOffset)
-        #this case is more complicated due to the use of the minimum z distance - there is no well-defined relation between the SSD given in the PMF and the actual z distance. we therefore record both the offset and the zero-distance
+        #this case is more complicated due to the use of the minimum z distance - there is no well-defined relation between the SSD given in the PMF and the actual z distance.  
         pmfDelta = requiredOffsetFE
     elif ssdDefType == 2:
         slabWidth = np.amax(  atomNumericData[:,2] ) - np.amin( atomNumericData[:,2])
@@ -351,10 +420,14 @@ for surfaceTarget in surfaceTargetSet[21::5] :
         pmfDelta = requiredOffsetFE  
     print( surfaceName, zeroLevelOffset, requiredOffsetFE, pmfDelta)
     offsetResultFile.write(surfaceName +","+str(zeroLevelOffset)+","   +str(requiredOffsetFE)+","+str(pmfDelta)+"\n")
-
-        
-    np.savetxt( outputFolder+"/" + surfaceName+"_fev3.dat", resArray, fmt='%2.7f',delimiter=",", header=feFileHeader)
-    
+    '''
+    if surfaceType == "plane":
+        ssdDelta = ssdRefDist
+    else:
+        ssdDelta = 0
+    pmfDelta = requiredOffsetFE + ssdDelta
+    offsetResultFile.write(surfaceName +","+str(zeroLevelOffset)+","   +str(requiredOffsetFE)+","+str(pmfDelta)+","+str(ssdDelta)+"\n")    
+    np.savetxt(outputTarget, resArray, fmt='%2.7f',delimiter=",", header=feFileHeader)
 
     #calculate extra molecules and save them out to individual files
     for moleculeProbeDef in moleculeProbes:

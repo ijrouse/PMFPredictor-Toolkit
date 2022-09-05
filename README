@@ -29,10 +29,13 @@ Level 4: PMF output
 PredictPMFs.py: Generates PMFs for all surface/chemical pairs using the model trained in Level 3.
 
 ===========
-Source?
+Source? SSD type?
 ===========
 The "source" variable for a surface defines whether it should be treated as a Stockholm-style calculation (if 0) or a UCD style (if 1). These most obviously lead to differences for gold, for which UCD-style has a large water peak and Stockholm-style does not. The choice for new materials is left to the user but it should be noted that there are significantly more Stockholm-style PMFs in the training set covering a wider range of materials.
-
+"SSD type" is provided to differentiate between different definitions of the SSD and comes in three flavours:
+1) SSD is defined relative to a fixed z or rho co-ordinate for planar and cylindricals respectively. 
+2) SSD is defined as the minimum distance between the COM of the adsorbate and any atom in the surface. 
+3) SSD is defined by the centre-of-slab to centre-of-adsorbate distance minus one-half the slab width
 
 ===========
 AN IMPORTANT NOTE ON TRAINING/VALIDATION/TEST splits
