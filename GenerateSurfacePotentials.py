@@ -198,13 +198,7 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
                 #print(electroToKJMol*probe[3]*electricContributions )
                 electrostaticPotential = np.sum( electroToKJMol*probe[3]*electricContributions   , axis=-1)
                 scaledDists = sigmaCombined/distArray 
-                if probe[4] == 1:
-                    beadRadius = 0.5
-                    hamterm1 = (4 * beadRadius**3) /(  ( beadRadius**2 - distArray**2  )**3  )
-                    hamterm2 = (sigmaCombined**6/(120.0 * distArray))*(  ( distArray + 9 * beadRadius )/(  (beadRadius+distArray)**9    )    -  (  distArray-9*beadRadius   )/(   ( distArray - beadRadius  )**9    )     )
-                    ljPotential = np.sum( 4.0/3.0 * np.pi * epsCombined * sigmaCombined**6 * (hamterm1 + hamterm2)     , axis=-1)
-                else:
-                    ljPotential = np.sum( 4 * epsCombined * (scaledDists**12 - scaledDists**6 ), axis=-1) #sum over atoms
+                ljPotential = np.sum( 4 * epsCombined * (scaledDists**12 - scaledDists**6 ), axis=-1) #sum over atoms
                 totalPotential = electrostaticPotential + ljPotential
                 probeFreeEnergy=-conversionFactor * np.log( np.sum(   np.exp( -totalPotential / conversionFactor) )  / np.sum(ones) )
                 if not np.isfinite(probeFreeEnergy):
