@@ -11,6 +11,7 @@ import scipy.integrate
 import argparse
 import HGEFuncs
 import GeometricFuncs
+import PotentialProbes
 
 parser = argparse.ArgumentParser(description="Parameters for GenerateChemicalPotentials")
 parser.add_argument("-f","--forcerecalc", type=int,default=0,help="If 1 then potentials are recalculated even if their table already exists")
@@ -19,24 +20,6 @@ args = parser.parse_args()
 if args.forcerecalc == 1:
     print("Recalculating all potentials")
 
-
-    
-def centerProbe( probeDef):
-    m=0
-    cx =0
-    cy =0
-    cz = 0
-    for i in range(len(probeDef)):
-        m+= probeDef[i][4]
-        cx += probeDef[i][0] * probeDef[i][4]
-        cy += probeDef[i][1] * probeDef[i][4]
-        cz += probeDef[i][2] * probeDef[i][4]
-    for i in range(len(probeDef)):
-        probeDef[i][0] =probeDef[i][0]  - cx/m
-        probeDef[i][1] = probeDef[i][1]  - cy/m
-        probeDef[i][2] = probeDef[i][2]  - cz/m
-    return probeDef
-    
     
 #define parameters used for the free energy calculation. probeEpsilon, probeSigma
 temperature = 300.0
@@ -48,71 +31,16 @@ slabBeadSigma = 0.339
 
 dielectricConst = 1
 
-pointProbes =[
-["C",0.339,0.3598,0],
-["K",0.314264522824 ,  0.36401,1],
-["Cl",0.404468018036 , 0.62760,-1],
-["C2A",0.2,0.3598,0],
-["C4A",0.4,0.3598,0],
-["CPlus",0.339,0.3598,0.5],
-["CMinus",0.339,0.3598,-0.5],
-["CMoreLJ",0.339,0.5,0],
-["CLessLJ",0.339,0.2,0],
-["CEps20",0.399,20,0]
-]
 
 
-
-waterProbe =  [
-[0.00305555555556,-0.00371666666667,0.00438888888889,  -0.834, 16, 0.315 , 0.636],
-[0.01195555555556,0.09068333333333,-0.00881111111111,    0.417, 1, 0.0,0.0],
-[-0.06084444444444,-0.03121666666667,-0.06141111111111,   0.417, 1, 0.0, 0.0]
-]
-
-waterUCDProbe =  [
-[0.2531 ,  0.0596,  -0.2477,  -0.834, 16, 0.315057422683 ,0.63639],
-[0.2620 ,  0.1540,  -0.2609,    0.417, 1, 0.040001352445, 0.19246],
-[0.1892 ,   0.0321,  -0.3135,   0.417, 1, 0.040001352445,  0.19246]
-]
-
-methaneProbe=[
-[0.108,0.006,0.001,-0.106800,12.01000,3.39771e-01,4.51035e-01],
-[0.072,0.109,0.000,0.026700,1.00800,2.60018e-01,8.70272e-02],
-[0.072,-0.047,-0.087,0.026700,1.00800,2.60018e-01,8.70272e-02],
-[0.072,-0.045,0.091,0.026700,1.00800,2.60018e-01,8.70272e-02],
-[0.217,0.006,0.001,0.026700,1.00800,2.60018e-01,8.70272e-02]
-]
-
-clineProbe =[
-[0.0, 0.0, -0.75, 0, 12.0100, 3.39771e-01,4.51035e-01],
-[0.0, 0.0, -0.5, 0, 12.0100, 3.39771e-01,4.51035e-01],
-[0.0, 0.0, -0.25, 0, 12.0100, 3.39771e-01,4.51035e-01],
-[0.0, 0.0, 0, 0, 12.0100, 3.39771e-01,4.51035e-01],
-[0.0, 0.0, 0.25, 0, 12.0100, 3.39771e-01,4.51035e-01],
-[0.0, 0.0, 0.5, 0, 12.0100, 3.39771e-01,4.51035e-01],
-[0.0, 0.0, 0.75, 0, 12.0100, 3.39771e-01,4.51035e-01]
-]
-
-
-
-sixcarbProbe=[
-
-[0.099,0.000,0.001,0,12.01000,3.31521e-01,4.13379e-01],
-[0.028,-0.120,0.001,0,12.01000,3.31521e-01,4.13379e-01],
-[-0.112,-0.120,-0.0005,0,12.01000,3.31521e-01,4.13379e-01],
-[-0.182,0.000,-0.001,0,12.01000,3.31521e-01,4.13379e-01],
-[-0.112,0.121,-0.0005,0,12.01000,3.31521e-01,4.13379e-01],
-[0.028,0.121,0.0005,0,12.01000,3.31521e-01,4.13379e-01]
-
-]
-
+pointProbes = PotentialProbes.getPointProbeSet([  "C","K","Cl","C2A","C4A","CPlus","CMinus","CMoreLJ","CLessLJ","CEps20"])
 
 moleculeProbes = [
-["water", waterProbe], 
-["waterUCD", waterUCDProbe],
-["methane", methaneProbe],
-["cline", clineProbe],
-["carbring", sixcarbProbe]
+["water", PotentialProbes.waterProbe], 
+["waterUCD", PotentialProbes.waterUCDProbe],
+["methane", PotentialProbes.methaneProbe],
+["cline", PotentialProbes.clineProbe],
+["carbring", PotentialProbes.sixcarbProbe]
 
 ]
 
@@ -177,32 +105,25 @@ for target in targetSet:
     #sigmaBroadcast, epsBroadcast, chargeBroadcast are all unmixed values for each atom in the molecule. sigmaBroadcastSlab, epsBroadcastSlab are calculated using mixing rules
     if surfaceType == "sphere":
         numc1=16
-        numc2=9
         thetaDelta = 15.0
         c1Range = np.linspace(0,2*np.pi, num = numc1, endpoint=False)
-        #c2Range = np.linspace(0, np.pi, num = numc2, endpoint=True)
         c2Range = np.arange( thetaDelta, 180.0 - thetaDelta, thetaDelta)*np.pi / 180.0
         numc2 = len(c2Range)
         c1grid,c2grid = np.meshgrid(   c1Range, c2Range) 
-        sigmaBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,5] , (numc1,numc2,len(atomNumericData)) ))
-        epsBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,6] , (numc1,numc2,len(atomNumericData)) ))
-        chargeBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,3] , (numc1,numc2,len(atomNumericData)) ))
-        sigmaBroadcastSlab = 0.5*(sigmaBroadcast + slabBeadSigma)
-        epsBroadcastSlab = np.sqrt( epsBroadcast*slabBeadEpsilon)
         pointWeights = np.sin(c2grid)
     else:
         numc1=23
         numc2=23
         c1Range = np.linspace(-1.0, 1.0, num = numc1, endpoint=True)
         c2Range = np.linspace(-1.0, 1.0, num = numc2, endpoint=True)
-        areaTerm = (c2Range[-1] - c2Range[0]) * (c1Range[-1] - c1Range[0])
         c1grid,c2grid = np.meshgrid(c1Range,c2Range)
-        sigmaBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,5] , (numc1,numc2,len(atomNumericData)) ))
-        epsBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,6] , (numc1,numc2,len(atomNumericData)) ))
-        chargeBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,3] , (numc1,numc2,len(atomNumericData)) ))
-        sigmaBroadcastSlab = 0.5*(sigmaBroadcast + slabBeadSigma)
-        epsBroadcastSlab = np.sqrt( epsBroadcast*slabBeadEpsilon)
         pointWeights = np.ones_like(c2grid)
+    sigmaBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,5] , (  len(c1Range),len(c2Range),len(atomNumericData)) ))
+    epsBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,6] , (len(c1Range),len(c2Range),len(atomNumericData)) ))
+    chargeBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,3] , (len(c1Range),len(c2Range),len(atomNumericData)) ))
+    sigmaBroadcastSlab = 0.5*(sigmaBroadcast + slabBeadSigma)
+    epsBroadcastSlab = np.sqrt( epsBroadcast*slabBeadEpsilon)
+
     resList = []
     waterResList = []
     lastInfPoint = rRange[0] - 1
@@ -289,7 +210,7 @@ for target in targetSet:
 
     for moleculeProbeDef in moleculeProbes:
         moleculeTag = moleculeProbeDef[0]
-        moleculeStructure = centerProbe(moleculeProbeDef[1])
+        moleculeStructure = PotentialProbes.centerProbe(moleculeProbeDef[1])
         outputLoc = outputFolder+"/" +     targetName+"_"+moleculeTag+"fe.dat"
         if args.forcerecalc == 0 and os.path.exists(outputLoc):
             print("Found", moleculeTag, " for " , targetName)
