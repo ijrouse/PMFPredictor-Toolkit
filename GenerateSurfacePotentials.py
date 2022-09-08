@@ -242,7 +242,7 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
     for moleculeProbeDef in moleculeProbes:
         moleculeTag = moleculeProbeDef[0]
         moleculeStructure = PotentialProbes.centerProbe(moleculeProbeDef[1])
-        outputLoc = outputFolder+"/" +     surfaceName+"_"+moleculeTag+"fe.dat"
+        outputLoc = outputFolder+"/" +     surfaceName+"_"+moleculeTag+"fe_multi.dat"
         if args.forcerecalc == 0 and os.path.exists(outputLoc):
             continue
         else:
@@ -250,20 +250,27 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
         rRangeWater =r0Start + np.arange(r0Start - requiredOffsetFE, 1.6,  0.01 ) #usual resolution 0.01   , starting point:  r-r0Start   + requiredOffsetFE = 0 -> r = r0Start - requiredOffsetFE
         #rRangeWater = np.arange(0.1,0.3,0.005) 
         waterResList = []   
+        thetaDelta = 30
+        phiNum = 8
+        if len(moleculeStructure) > 14:
+            thetaDelta = 15
+            phiNum = 16
+        thetaRange = np.arange( thetaDelta, 180 , thetaDelta)*np.pi/180.0       
+        phiRange = np.linspace(0,2*np.pi, num =phiNum, endpoint=False)
+        #c1grid,c2grid,atomIndexGrid,thetaGrid,phiGrid = np.meshgrid(   c1Range, c2Range,atomNumRange, thetaRange, phiRange)
+        c1grid,c2grid,atomIndexGrid = np.meshgrid(   c1Range, c2Range,atomNumRange)
+        sigmaBroadcast = atomNumericData[atomIndexGrid,5]
+        epsBroadcast = atomNumericData[atomIndexGrid,6]
+        chargeBroadcast = atomNumericData[atomIndexGrid,3]        
+         
         for r in rRangeWater:      
             waterMin = 1e20      
             runningNumerator = 0
             runningDenominator = 0
-            thetaDelta = 30
-            phiNum = 8
-            if len(moleculeStructure) > 14:
-                thetaDelta = 15
-                phiNum = 16
-            thetaRange = np.arange( thetaDelta, 180 , thetaDelta)*np.pi/180.0
             minEnergy = 1e20
             minData = [0,0,0] #phi,theta
-            for theta in  thetaRange: #np.linspace(0,np.pi, num = 5, endpoint=True) : #usual 5 values
-                for phi in np.linspace(0,2*np.pi, num =phiNum, endpoint=False): #usual 8 values
+            for theta in thetaRange: #thetaRange  [0]: #np.linspace(0,np.pi, num = 5, endpoint=True) : #usual 5 values
+                for phi in phiRange: #phiRange  #usual 8 values
                     rotateMatrixInternal = GeometricFuncs.UARotateMatrix(np.pi - theta,-phi)
                     allContributions = 0
                     minz = 20
@@ -274,17 +281,6 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
                         ax = atom[0] * rotateMatrixInternal[0,0] + atom[1]*rotateMatrixInternal[0,1] + atom[2]*rotateMatrixInternal[0,2]
                         ay = atom[0] * rotateMatrixInternal[1,0] + atom[1]*rotateMatrixInternal[1,1] + atom[2]*rotateMatrixInternal[1,2]
                         az = atom[0] * rotateMatrixInternal[2,0] + atom[1]*rotateMatrixInternal[2,1] + atom[2]*rotateMatrixInternal[2,2]
-                        #distList = []
-                        #for i in range(len(atomNumericData)): #There is probably a more efficient way of doing this but in the interest of clarity this is easier to debug. ax = probe atom x, atomNumericData[i,0] is structure atom i
-                        #    if surfaceType == "cylinder":
-                        #        atomDist = np.sqrt( ( r* np.cos(c1grid) + ax - atomNumericData[i,0] )**2 + ( r* np.sin(c1grid) + ay - atomNumericData[i,1] )**2  + ( c2grid + az -atomNumericData[i,2] )**2 )
-                        #        minz = min(minz, np.sqrt(np.amin( ( r* np.cos(c1grid) + ax - atomNumericData[i,0] )**2 + ( r* np.sin(c1grid) + ay - atomNumericData[i,1] )**2)))
-                        #        distList.append(atomDist)
-                        #    else:
-                        #        atomDist = np.sqrt(   ( c1grid + ax - atomNumericData[i,0])**2 + (c2grid + ay - atomNumericData[i,1])**2 + (r + az - atomNumericData[i,2])**2  )
-                        #        minz = min(minz, r + az - atomNumericData[i,2]) 
-                        #        distList.append(atomDist)
-                        #distArray = np.array(distList)
 
                         if surfaceType == "cylinder":
                             distArray = np.sqrt( ( r* np.cos(c1grid) + ax - atomNumericData[atomIndexGrid,0] )**2 + ( r* np.sin(c1grid) + ay - atomNumericData[atomIndexGrid,1] )**2  + ( c2grid + az -atomNumericData[atomIndexGrid,2] )**2 )
@@ -292,13 +288,13 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
                             distArray = np.sqrt(   ( c1grid + ax - atomNumericData[atomIndexGrid,0])**2 + (c2grid + ay - atomNumericData[atomIndexGrid,1])**2 + (r + az - atomNumericData[atomIndexGrid,2])**2  )
 
                         #print( np.amin(distArray)   ) 
-                        electricContributions = np.sum( chargeBroadcast  / distArray , axis=-1 )
+                        electricContributions = np.sum( chargeBroadcast  / distArray , axis=2 )
                         scaledDists = sigmaCombined/distArray 
-                        ljContributions =  np.sum( 4*epsCombined*( scaledDists**12 - scaledDists**6) , axis=-1)
+                        ljContributions =  np.sum( 4*epsCombined*( scaledDists**12 - scaledDists**6) , axis=2)
                         allContributions += (electroToKJMol*atom[3]*electricContributions + ljContributions)
                     waterMin = min( waterMin, np.amin(allContributions)) #this is used only if there's no better value under the assumption its either the least bad or most favourable
                     ones = (  1 + np.zeros_like(allContributions) )
-                    runningNumerator += np.sum(  np.exp(-allContributions/conversionFactor)     )* np.sin(theta)
+                    runningNumerator += np.sum(  np.exp(-allContributions/conversionFactor)     * np.sin(theta) )
                     runningDenominator += np.sum(ones * np.sin(theta))
                     #thetaNumTerms.append(np.sum(  np.exp(-allContributions/conversionFactor)     ))
                     #thetaDenomTerms.append(  np.sum(ones ))
