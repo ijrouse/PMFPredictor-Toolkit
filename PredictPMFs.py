@@ -75,7 +75,7 @@ targetModel="pmfpredict-july27-deconvresid-1-unscaledmse-noe0-extracorrection-wi
 
 targetModel="pmfpredict-aug02-gatealpha0p1-nresid8-mixing5"
 
-
+targetModel = "pmfpredict-aug29-mixtrainval"
 def scaledMSE(scaleVal):
     def loss(y_true,y_pred):
         return tf.keras.losses.mean_squared_error( y_true/scaleVal, y_pred/scaleVal) 
@@ -122,7 +122,7 @@ UnitedAtomNames = {
 varsetFile = open("models/"+targetModel+"/varset.txt","r")
 aaVarSet = varsetFile.readline().strip().split(",")
 varsetFile.close()
-loadedModel = tf.keras.models.load_model("models/"+targetModel+"/checkpoints/checkpoint-train"    , custom_objects={ 'loss': scaledMSE(1) ,'aaVarSet':aaVarSet })
+loadedModel = tf.keras.models.load_model("models/"+targetModel+"/checkpoints/checkpoint-train"    , custom_objects={ 'loss': scaledMSE(1) ,'aaVarSet':aaVarSet },compile=False)
 
 
 outputVarset = ["A1","A2","A3","A4","A5","A6","A7","A8","A9","A10","A11","A12","A13","A14","A15","A16", "A17","A18","A19","A20" ,"e0predict","Emin"]
@@ -160,8 +160,8 @@ datasetSingle.to_csv("predicted_pmfs/"+targetModel+"/checkpointpredict_targetinp
 def HGEFunc(r, r0, n):
     return (-1)**(1+n) * np.sqrt( 2*n - 1) * np.sqrt(r0)/r * scspec.hyp2f1(1-n,n,1,r0/r)
 
-targetMolecules = pd.read_csv("Datasets/ChemicalPotentialCoefficientsNoise1-july28.csv")
-targetSurfaces = pd.read_csv("Datasets/SurfacePotentialCoefficientsNoise-1-july28.csv")
+targetMolecules = pd.read_csv("Datasets/ChemicalPotentialCoefficientsNoise1-aug26.csv")
+targetSurfaces = pd.read_csv("Datasets/SurfacePotentialCoefficientsNoise-1-aug30.csv")
 targetE0Val = 50
 
 uniqueMaterials = targetSurfaces['SurfID'].unique().tolist()
@@ -335,6 +335,7 @@ def recurrentPredictV2(model, dataset, direction=-1, r0Min = 0.05, r0Max=0.9, ta
         combinedDatasetAtR0["rEMin"] = 0.5
         combinedDatasetAtR0[  "lastE0" ] = 0
         combinedDatasetAtR0[  "fittedE0" ] = targetE0
+        combinedDatasetAtR0["resolution"] = 0.01
         predictionSet = ( np.array( model.predict([ combinedDatasetAtR0[ aaVarSet]      ])[0]   )[:,:,0] ).T
         for i in range(len(outputVarset)):
             combinedDatasetAtR0[ outputVarset[i]+"_regpredict" ] =predictionSet[:,i].flatten()  
@@ -354,9 +355,109 @@ def recurrentPredictV2(model, dataset, direction=-1, r0Min = 0.05, r0Max=0.9, ta
         currentr0 = currentr0+   direction*0.01
     return completedPMFSet
 
+
+
+#Generate PMFs for each specified value of r0, construct a weighted average with weight w = exp( - (r - r0) ).Theta(r - r0) , i.e. 0 for r< r0, exponentially decaying for larger
+#coeffSet should be a list of the form [ [r01,A11,A12] ... [r0N,A1N,A2N] ] where N is the number of predictions made for a specific chem-surface pair
+def mergePMFPredictions(rRange, coeffSet):
+    r0Set = coeffSet[:,0]
+    rmesh,r0mesh = np.meshgrid(rRange,r0Set)
+    weightMesh = np.where( rmesh > r0mesh, np.exp( -(rmesh-r0mesh) ), 0.0 )
+    pmfMesh = np.zeros_like(rmesh)
+    for i in range(1,20):
+        rmesh2, coeffmesh = np.meshgrid(rRange, coeffSet[:,i])
+        pmfMesh = pmfMesh + coeffmesh * HGEFunc(rmesh, r0mesh, i)
+    pmfMesh = pmfMesh* weightMesh
+    pmfRow = np.sum(pmfMesh,axis=-1)/np.sum( weightMesh,axis=-1)
     
+    
+outputFig = plt.figure()
+numberOutputPMFs = 4
+axSet = []
+for i in range(2*numberOutputPMFs):
+    axSet.append(plt.subplot(numberOutputPMFs,2,i+1))
+
+def stepwisePredict(model, dataset,  rValRange,direction=1,r0Min = 0.05, r0Max=0.9, targetE0 = 20):
+    deltaR0 = 0.05
+    moleculeSetWorking = targetMolecules.copy()
+    surfaceSetWorking = targetSurfaces.copy()
+    if direction==-1:
+        currentr0 = r0Max - deltaR0
+    else:
+        currentr0 = r0Min  
+    #nonconvergedSet = workingDataset[   workingDataset["lastE0"] > targetE0]
+
+    allPMFs = dataset["PMFName"].values.tolist()
+    completedPMFs = []
+    completedPMFSet = dataset.iloc[:0,:].copy() 
+    #print(allPMFs)
+    #print(len(workingDataset[nonconvergedMask]))
+    pmfCalcSet = np.zeros( ( len(allPMFs ), len(rValRange) ) )
+    pmfPointWeights = np.zeros_like( rValRange)
+    while   currentr0 < r0Max and currentr0 >= r0Min:
+        print(  currentr0)
+        #sort all molecule and surface lines to find the ones with the closest set of values of r0
+        moleculeSetWorking["R0Dist"] = np.sqrt((moleculeSetWorking["ChemCProbeR0"].to_numpy() - currentr0)**2)
+        moleculeSetWorking.sort_values( by=["R0Dist"] ,ascending=True, inplace=True)
+        moleculeBestMatches = moleculeSetWorking.drop_duplicates( subset=['ChemID']  ,keep='first')       
+        surfaceSetWorking["R0Dist"] = np.sqrt((surfaceSetWorking["SurfCProbeR0"].to_numpy() - currentr0)**2)
+        surfaceSetWorking.sort_values( by=["R0Dist"] ,ascending=True, inplace=True)
+        #print(targetSurfaces)
+        surfaceBestMatches = surfaceSetWorking.drop_duplicates( subset=['SurfID']  ,keep='first')  
+        #print(moleculeBestMatches)             
+        #print(surfaceBestMatches )
+        combinedDatasetAtR0 = pd.merge(moleculeBestMatches,surfaceBestMatches,how="cross")
+        combinedDatasetAtR0["PMFName"] = combinedDatasetAtR0["SurfID"]+"_"+combinedDatasetAtR0["ChemID"]
+        combinedDatasetAtR0.sort_values( by=["PMFName"],inplace=True,ascending=True)
+        combinedDatasetAtR0.drop( combinedDatasetAtR0[combinedDatasetAtR0["PMFName"].isin( completedPMFs)].index,inplace=True )
+        combinedDatasetAtR0["r0"] = currentr0
+        combinedDatasetAtR0["EMin"] = -1
+        combinedDatasetAtR0["rEMin"] = 0.5
+        combinedDatasetAtR0[  "lastE0" ] = 0
+        combinedDatasetAtR0[  "fittedE0" ] = targetE0
+        combinedDatasetAtR0["resolution"] = 0.01
+        predictionSet = ( np.array( model.predict([ combinedDatasetAtR0[ aaVarSet]      ])[0]   )[:,:,0] ).T
+        
+
+        r0Mask = np.where( rValRange >= currentr0, 1.0, 0.0)
+        #print(r0Mask)
+        r0Weight = np.exp( -10.0* ((rValRange - (currentr0 + 3* deltaR0 ) )**2 )/(deltaR0**2)   )*r0Mask
+        pmfR0Contribution0 = np.zeros( (len(allPMFs),len(rValRange) ))
+        for i in range(20 ):
+            basisFuncVals = HGEFunc(rValRange, currentr0, i+1) * r0Mask   
+            coeffISet =predictionSet[:,i].flatten()  
+            pmfR0Contribution0 += np.outer( coeffISet,basisFuncVals) # numPMFs x numRPoints
+        pmfR0Contribution = pmfR0Contribution0 * r0Weight #possibly transpose first to match broadcasting if needed, or manually tile
+        pmfCalcSet = pmfCalcSet + pmfR0Contribution
+        pmfPointWeights = pmfPointWeights + r0Weight
+        #print(pmfPointWeights)
+        currentr0 = currentr0+   direction*deltaR0
+        currentPMFs = pmfCalcSet / pmfPointWeights
+        for j in range(0,numberOutputPMFs):
+            axSet[2*j].clear()
+            axSet[2*j].scatter( rValRange, currentPMFs[j] )
+            axSet[2*j + 1].scatter( rValRange, pmfR0Contribution0[j] ,alpha=0.1)
+        plt.pause(0.05)
+    return currentPMFs  
+    
+    
+    
+    
+    
+    
+    
+    
+
+    
+    
+    
+    
+rRange = np.arange( 0.05, 1.5, 0.01)
 #combinedDataset = recurrentPredictV2( loadedModel, combinedDataset, direction=1, r0Min = 0.15, r0Max = 0.8, targetE0=40)
-combinedDataset = singleStepPredict(loadedModel,combinedDataset)
+combinedDataset = stepwisePredict(loadedModel,combinedDataset,rRange)
+
+plt.show()    
+
 '''
 
 predictionSetSingle =  ( np.array( loadedModel.predict([    combinedDataset[aaVarSet] ]  ,verbose=True ))[:,:,0] ).T
@@ -367,7 +468,7 @@ for i in range(len(outputVarset)):
 '''
 
 
-
+'''
 combinedDataset.to_csv("predicted_pmfs/"+targetModel+"/predicted_coeffs_allpairs.csv")
 
 offsetData = np.genfromtxt("Datasets/SurfaceOffsetDataManual.csv",skip_header=1,delimiter=",", dtype=str)
@@ -417,4 +518,5 @@ for index,row in combinedDataset.iterrows():
 readmeFile = open("predicted_pmfs/"+targetModel+"/README","w")
 readmeFile.write("PMFs contained here were generated at " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " using model variant " + targetModel)
 readmeFile.close()
+'''
         

@@ -194,7 +194,7 @@ class TrainableXLog(keras.layers.Layer):
         #return  tf.math.sign(inputs) * tf.math.log1p( tf.math.abs(inputs*self.alpha))/self.alpha
 
 
-datasetAll= pd.read_csv("Datasets/TrainingData-r0matched-aug30.csv")
+datasetAll= pd.read_csv("Datasets/TrainingData-r0matched-sep07.csv")
 #datasetAll = datasetAll.head(1000)
 
 #datasetExtra= pd.read_csv("Datasets/TrainingData_PMFn9xCombon2-r0matched-aug02-negativeE0-partial.csv")
@@ -206,7 +206,7 @@ basedir = "models"
 numDeconvResidCorrections =8
 #filetag = "pmfpredict-aug16-mix1-deconv8x8-mix2-c6-pmfclusterfix-resolution-mixing-addwholepotentials-directdecode-extrawater-klonly-loweps"
 #filetag = "pmfpredict-aug21-mix6-deconv-mix6-desatweightspreset-withpost-KLloss-nodesat-allscaled-batchnorms-oldxlogwithshift"
-filetag = "pmfpredict-sep02-septrainval-v2-moredropout"
+filetag = "pmfpredict-sep07-mixtrainval-v2-moredropout-normedclusters-localnormxlogpotential-oldclusters"
 workingDir = basedir+"/"+filetag
 
 datasetAll['pmfname'] = datasetAll['Material'] + "_" + datasetAll['Chemical']
@@ -259,30 +259,40 @@ for pmfToDrop in suspiciousPMFs:
 
 
 #re-assign the Al PMFs to source=2 because these are different to all the others
-datasetAll.loc[ datasetAll["Material"] == "AlFCC100UCD" ,   "source" ] = 2
-datasetAll.loc[ datasetAll["Material"] == "AlFCC110UCD" ,   "source" ] = 2
+#datasetAll.loc[ datasetAll["Material"] == "AlFCC100UCD" ,   "source" ] = 2
+#datasetAll.loc[ datasetAll["Material"] == "AlFCC110UCD" ,   "source" ] = 2
 
 #and re-assign CdSe, AuSU because these don't have ions
-datasetAll.loc[ datasetAll["Material"] == "AuFCC100" ,   "source" ] = 3
-datasetAll.loc[ datasetAll["Material"] == "CdSeWurtzite2-10" ,   "source" ] = 3
+#datasetAll.loc[ datasetAll["Material"] == "AuFCC100" ,   "source" ] = 3
+#datasetAll.loc[ datasetAll["Material"] == "CdSeWurtzite2-10" ,   "source" ] = 3
 
 
 #datasetAll.loc[ datasetAll["Material"] == "AlFCC111UCD" ,   "source" ] = 2
 #then drop the al for now
-datasetAll = datasetAll.drop( datasetAll[datasetAll["source"]==2].index )
+
+
+datasetAll.loc[ datasetAll["Material"] == "AuFCC100UCD" ,   "source" ] = 2
+datasetAll.loc[ datasetAll["Material"] == "AuFCC110UCD" ,   "source" ] = 2
+datasetAll.loc[ datasetAll["Material"] == "AuFCC111UCD" ,   "source" ] = 2
+datasetAll = datasetAll.drop( datasetAll[datasetAll["source"]==3].index )
 
 
 
 
 if args.bootstrap == 0:
-    dataset = datasetAll.copy()
+    dataset = datasetAll
 else:
     filetag = filetag+"-bootstrapped"
-    dataset = datasetAll.sample(frac=1,replace=True,random_state=1+args.ensembleID)
+    pmfSet  =  datasetAll['pmfname'].unique().tolist()
+    selectedPMFs = random.choices( pmfSet, len(pmfSet) )
+    dataset = pd.DataFrame()
+    for selectedPMF in selectedPMFs:
+        dataset = pd.concat( [dataset, datasetAll[datasetAll["pmfname"]==selectedPMF] ]   )
+    #dataset = datasetAll.sample(frac=1,replace=True,random_state=1+args.ensembleID)
 
 if args.ensembleID>0:
-    filetag = filetag+"-"+str(args.ensembleID)
-    numEpochs = 200
+    filetag = filetag+"-ensemble"+str(args.ensembleID)
+    numEpochs = 50
 
 #build the folders for logging, outputs, metadata
 os.makedirs(basedir, exist_ok=True)
@@ -295,7 +305,7 @@ shutil.copyfile(localName, workingDir+"/"+localName)
 
 
 #IMPORTANT: r0 has to remain the first variable for the slicing later on to work correctly.
-pmfVars = ["r0",  "SurfAlignDist", "source", "numericShape","resolution"]
+pmfVars = ["r0",  "SurfAlignDist", "SSDRefDist", "source", "numericShape","resolution"]
 ssdVar = ["ssdType"]
 
 #coeffOrders = [  1,2,3,4,5,6,7,8,9 ,10,11,12 ,13,14,15,16 ]
@@ -315,13 +325,17 @@ chosenCoeffsNorm = []
 coeffNormR0Matrix = []
 
 potentialEMins = []
+overrideCoeffNorm = False
 for potModel in potentialModels:
     #chosenCoeffs.append( potModel+"R0")
     potentialEMins.append(potModel+"EMin")
     potentialEMins.append(potModel+"RightEMin")
     for coeffNum in coeffOrders:
         chosenCoeffs.append(potModel+"C"+str(coeffNum))
-        chosenCoeffsNorm.append(potModel+"C"+str("1")) #override per-variable to per-potential normalisation
+        if overrideCoeffNorm == True:
+            chosenCoeffsNorm.append(potModel+"C"+str("1")) #override per-variable to per-potential normalisation
+        else:
+            chosenCoeffsNorm.append(potModel+"C"+str(coeffNum)) 
         coeffNormR0Matrix.append("r0")
 
 numericVars = chosenCoeffs +potentialEMins+ ["EMin", "rEMin" , "fittedE0"]
@@ -345,39 +359,46 @@ varsetOutputFile.close()
 inputs = [aaPresetIn]
 
 
-allowMixing = 0
+allowMixing = 1
 
 if allowMixing == 0:
     #Find the set of materials present in the training set and get their canonical coefficients
     uniqueMaterials = dataset['Material'].unique().tolist()
-    print(dataset)
-    canonicalMaterialSet =   pd.read_csv("Datasets/SurfacePotentialCoefficients-sep01.csv")
+    #print(dataset)
+    canonicalMaterialSet =   pd.read_csv("Datasets/SurfacePotentialCoefficients-sep07.csv")
     canonicalMaterialSet["R0Dist"] = np.sqrt( (canonicalMaterialSet["SurfCProbeR0"] - 0.2 )**2 ) 
     canonicalMaterialSet.sort_values( by=["R0Dist"] ,ascending=True, inplace=True)
     canonicalMaterialSet.drop_duplicates( subset=['SurfID'] , inplace=True,keep='first')
-    print(canonicalMaterialSet)
+    #print(canonicalMaterialSet)
     trainingMaterialSet = canonicalMaterialSet[canonicalMaterialSet["SurfID"].isin(uniqueMaterials)]
-    print(trainingMaterialSet)
+    #print(trainingMaterialSet)
     #override the random assignment to ensure that both Stockholm-style and UCD-style AuFC100 PMFs are in the training set
     #this is so that a) we get the really strongly-binding Stockholm-style gold and b) to provide a baseline for conversion between the two
     #we also add the results of cluster analysis based on the generated potentials
     clusterpotentialModels = surfacePotentialModels
-    chosenClusterCoeffs = ["SurfAlignDist","numericShape"]
+    chosenClusterCoeffs = ["SurfAlignDist","numericShape"] #  ,"SSDRefDist"]
     for potModel in clusterpotentialModels:
         for coeffNum in range(1,9):
             chosenClusterCoeffs.append(potModel+"C"+str(coeffNum))
     #print(materialSet[chosenClusterCoeffs])
     actualClusterNum = min( 15, int(round(len(trainingMaterialSet)*0.5)) )
-    agglomCluster = skcluster.AgglomerativeClustering(n_clusters = actualClusterNum) # None, distance_threshold =5)
+    agglomCluster = skcluster.AgglomerativeClustering(n_clusters = actualClusterNum ) # None, distance_threshold =5)
     print(trainingMaterialSet[chosenClusterCoeffs].values)
-    agglomCluster.fit(trainingMaterialSet[chosenClusterCoeffs].values) 
+    agglomCluster.fit( skpreproc.normalize( trainingMaterialSet[chosenClusterCoeffs].values)) 
     clusterLabels =  agglomCluster.labels_
     fixedMaterials = ["AuFCC100", "AuFCC100UCD"]
+    
+    
+    clustersOutputFile=open(workingDir+"/outputvarset.txt","w")
+    #clustersOutputFile.write( ",".join(outputVarset))
+
+    clustersOutputFile.write("Material clusters")
     for i in range(max(agglomCluster.labels_) + 1):
         clusterMembers = trainingMaterialSet[ clusterLabels == i][ "SurfID" ].values 
         randomMember = random.choice(clusterMembers)
         print("Cluster", i, "assigning", randomMember, "from", clusterMembers)
         fixedMaterials.append(randomMember)
+        clustersOutputFile.write( "Cluster " + str(i)+ " assigning " + randomMember + " from " + ",".join(clusterMembers) + "\n")
     fixedMaterials = list(set(fixedMaterials)) #remove any duplicates
     
     fixedSMILES = ["C","Cc1c[nH]c2ccccc12"]
@@ -389,7 +410,7 @@ if allowMixing == 0:
     canonicalChemicalSet.drop_duplicates( subset=['ChemID'] , inplace=True,keep='first')
 
 
-
+    clustersOutputFile.write("Chemical clustering: \n")
     trainingChemicalSet = canonicalChemicalSet[canonicalChemicalSet["ChemID"].isin(uniqueChemicals)]
     clusterpotentialModels = chemicalPotentialModels
     chosenClusterCoeffs = []
@@ -399,13 +420,14 @@ if allowMixing == 0:
     #print(materialSet[chosenClusterCoeffs])
     actualClusterNum = min( numChemClusters, int(round(len(trainingChemicalSet)*0.5)) )
     agglomCluster = skcluster.AgglomerativeClustering(n_clusters = actualClusterNum )
-    agglomCluster.fit(trainingChemicalSet[chosenClusterCoeffs].values) 
+    agglomCluster.fit(  skpreproc.normalize( trainingChemicalSet[chosenClusterCoeffs].values) )
     clusterLabels =  agglomCluster.labels_
     for i in range(max(agglomCluster.labels_) + 1):
         clusterMembers = trainingChemicalSet[ clusterLabels == i][ "SMILES" ].values 
         randomMember = random.choice(clusterMembers)
         print("Cluster", i, "assigning", randomMember, "from", clusterMembers)
         fixedSMILES.append(randomMember)
+        clustersOutputFile.write( "Cluster " + str(i)+ " assigning " + randomMember + " from " + ",".join(clusterMembers) + "\n")
     fixedSMILES = list(set(fixedSMILES))
     #fixedMaterials = ["AuFCC100", "AuFCC100UCD",  "CNT15-COO--10" ,   "SiO2-Quartz","grapheneoxide","Fe2O3-001O" , "Ag110" , "CNT15-COOH-30", "SiO2-Amorphous", "CdSeWurtzite2-10", "TiO2-ana-100"]
     #fixedSMILES = ["C", "OCC1OC(O)C(O)C(O)C1O", "Cc1c[nH]c2ccccc12"]
@@ -436,6 +458,7 @@ if allowMixing == 0:
     dataset.loc[  dataset['Material'].isin(validationMaterials) , 'MaterialValidation' ] = 1
     test_dataset = dataset[ (dataset['Chemical'].isin(validationAA) ) | (dataset['Material'].isin(validationMaterials) )].copy() #if either of the material or AA is in the validation set, it gets assigned to the validation set to prevent leakage
     train_dataset = dataset.drop(test_dataset.index)
+    clustersOutputFile.close()
 else:
     uniquePMFs =dataset['pmfname'].unique().tolist()
     validationPMFs = sorted( random.sample( sorted(uniquePMFs), int( len(uniquePMFs)*0.3)))
@@ -587,7 +610,7 @@ logres = layers.GaussianNoise(0.1)(logres)
 
 #ssdVar = ["ssdType"]
 ssdInputVar = SliceLayer( aaVarSet.index("ssdType") , 1)(aaPresetNorm)
-ssdInputVar = layers.CategoryEncoding( num_tokens=3,  output_mode="one_hot")(ssdInputVar)
+ssdInputVar = layers.CategoryEncoding( num_tokens=4,  output_mode="one_hot")(ssdInputVar)
 print(ssdInputVar)
 #quit()
 
@@ -612,7 +635,14 @@ offsetNorm.adapt( np.array(train_dataset["SurfAlignDist"]))
 offsetVarLayer = offsetNorm(offsetVarLayer)
 offsetVarLayer = layers.GaussianNoise(0.2)(offsetVarLayer)
 
-pmfInputVarLayer = layers.Concatenate()([ logr0, pmfInputVarLayer,offsetVarLayer,logres,r0Noise])
+
+ssdoffsetVarLayer = SliceLayer( aaVarSet.index("SSDRefDist"),  1)(aaPresetNorm)
+ssdoffsetNorm = layers.Normalization(axis=None)
+ssdoffsetNorm.adapt( np.array(train_dataset["SSDRefDist"]))
+ssdoffsetVarLayer = ssdoffsetNorm(ssdoffsetVarLayer)
+ssdoffsetVarLayer = layers.GaussianNoise(0.2)(ssdoffsetVarLayer)
+
+pmfInputVarLayer = layers.Concatenate()([ logr0, pmfInputVarLayer,offsetVarLayer,ssdoffsetVarLayer,logres,r0Noise])
 print(pmfInputVarLayer)
 
 pmfInputsEncoded = layers.Dense(16)(pmfInputVarLayer)
@@ -638,15 +668,17 @@ pairedStartCoeffs = layers.Concatenate()([slabCoeffs,methaneCoeffs])
 print(pairedStartCoeffs)
 
 
-potentialCoeffsOnly0 = SliceLayer( aaVarSet.index("SurfCProbeC1") ,len(chosenCoeffs) )(aaPresetNorm)
+potentialCoeffsOnlyInit0 = SliceLayer( aaVarSet.index("SurfCProbeC1") ,len(chosenCoeffs) )(aaPresetNorm)
 
 
 
 
 #coeffNormalizer = layers.Normalization()
 #coeffNormalizer.adapt( np.array(datasetAll[chosenCoeffs]))
-potentialCoeffsOnly = coeffNormalizer(potentialCoeffsOnly0) #scales and shifts all potential coefficients according to C1 for that potential
+#potentialCoeffsOnly = coeffNormalizer(potentialCoeffsOnly0) #scales and shifts all potential coefficients according to C1 for that potential
+potentialCoeffsOnly0 = TrainableXLog()(potentialCoeffsOnlyInit0)
 
+potentialCoeffsOnly = layers.GaussianNoise(0.01)(potentialCoeffsOnly0)
 #potentialMinNormalizer = layers.Normalization()
 
 
@@ -671,7 +703,7 @@ class PCoeffSumLayer(tf.keras.layers.Layer):
       return tf.reduce_sum( tf.math.multiply( tf.math.multiply(inputs[0] ,tiledPrefactors   ) , inputs[1]), axis=1)
       
       
-potentialCoeffsUnnormed = layers.Reshape( (numCoeffs,-1) )(potentialCoeffsOnly0)
+potentialCoeffsUnnormed = layers.Reshape( (numCoeffs,-1) )(potentialCoeffsOnlyInit0)
 invsqrtr0P = layers.RepeatVector(numPotentials * numCoeffs)(invsqrtr0)
 invsqrtr0P = layers.Reshape((numCoeffs,-1))(invsqrtr0P)
 potentialValsAtR0 = PCoeffSumLayer()([potentialCoeffsUnnormed,invsqrtr0P])
@@ -693,7 +725,7 @@ print(potentialValsAtR0)
 potentialCoeffsScalingFactor = GetCoeffScaleLayer()(sqrtr0)
 potentialCoeffsScalingFactor = layers.RepeatVector( numPotentials  )(potentialCoeffsScalingFactor)
 potentialCoeffsScalingFactor = layers.Permute( (2,1) )(potentialCoeffsScalingFactor)
-potentialCoeffsOnly = layers.Multiply( )([potentialCoeffsOnly, potentialCoeffsScalingFactor])
+#potentialCoeffsOnly = layers.Multiply( )([potentialCoeffsOnly, potentialCoeffsScalingFactor])
 
 
 
@@ -976,6 +1008,8 @@ eminValsProcessed2  = TrainableXLog()(eminValsProcessed2 )
 
 preprocessingState = layers.Concatenate()([e0StateEstimateForward,eMinStateEstimateForward])
 preprocessingState = layers.GaussianNoise(0.5)(preprocessingState)
+#preprocessingState = layers.Dense(8)(preprocessingState)
+#preprocessingState = TrainableXLog()(preprocessingState)
 
 allNonPotentialCoeffs = layers.Concatenate()([ pmfInputVarLayer,eMinRoughEstimateForward,eminValsProcessed2, e0RoughEstimateForward,potentialValsAtR0,preprocessingState])
 
@@ -1089,8 +1123,9 @@ directDecode = TrainableXLog()(directDecode)
 for i in range(6):
     directDecodeFF = layers.Dense( directDecodeWorkingDim  )(directDecode)
     directDecodeFF = TrainableXLog()(directDecodeFF)
-    directDecodeFF = layers.Dropout(0.3)(directDecodeFF)
+    directDecodeFF = layers.Dropout(0.5)(directDecodeFF)
     directDecodeFF = layers.Dense( directDecodeStateDim)(directDecodeFF)
+    directDecodeFF = layers.Dropout(0.25)(directDecodeFF)
     #directDecodeFF = layers.BatchNormalization()(directDecodeFF)
     #directDecodeFF = layers.Dense(128)(directDecodeFF)
     directDecode = directDecode + directDecodeFF
@@ -1108,6 +1143,8 @@ potentialCoeffsOnly = layers.Concatenate()([ potentialCoeffsOnly, directDecode])
 
 
 numMixedPotentialsFirst = 4
+#encodedStateMixing
+
 #potentialCoeffsOnly = layers.Concatenate()([ potentialCoeffsOnly, pmfCorrect])
 for i in range(numMixedPotentialsFirst):
     for j in range(3):
@@ -1118,8 +1155,6 @@ for i in range(numMixedPotentialsFirst):
         mixingMatrixFF = TrainableXLog()(mixingMatrixFF)
         mixingMatrixFF = layers.Dropout(0.3)(mixingMatrixFF)
         mixingMatrix = mixingMatrix + mixingMatrixFF
-
-
     '''
     mixingMatrix = layers.Dense(128)( encodedState )
     mixingMatrix = TrainableXLog()(mixingMatrix)
@@ -1137,7 +1172,9 @@ for i in range(numMixedPotentialsFirst):
     mixingMatrix = layers.GaussianDropout( coeffMultiNoiseRate)(mixingMatrix)
     #mixingMatrix = layers.Dropout(0.5)(mixingMatrix)
     mixingMatrix = TrainableXLog()(mixingMatrix)
+    mixingMatrix = layers.Dropout(0.1)(mixingMatrix)
     mixingMatrix = layers.RepeatVector( 20)(mixingMatrix)
+    #mixingMatrix = layers.Dropout(0.3)(mixingMatrix)
     #mixingMatrix = layers.Reshape( (20,-1) )(mixingMatrix)
     potentialCoeffsOnlyDrop = layers.Dropout(0.2)(potentialCoeffsOnly)
     newCoeffSet = layers.Multiply()([mixingMatrix,potentialCoeffsOnlyDrop])
@@ -1153,7 +1190,7 @@ for i in range(numMixedPotentialsFirst):
     newCoeffSet = TrainableXLog()(newCoeffSet)
     #newCoeffSet = layers.LocallyConnected1D(1,1)(newCoeffSet)
     newCoeffSet = layers.Flatten()(newCoeffSet)
-    #newCoeffSet = layers.BatchNormalization()(newCoeffSet)
+    newCoeffSet = layers.BatchNormalization()(newCoeffSet)
 
     newCoeffSet = layers.Reshape( (-1,1))(newCoeffSet)
     potentialCoeffsOnly = layers.Concatenate()([ potentialCoeffsOnly, newCoeffSet])
@@ -1229,6 +1266,7 @@ for i in range(numMixedPotentials):
         if j == 0:
             mixingMatrix = layers.Dense(128)( encodedState )
             mixingMatrix = TrainableXLog()(mixingMatrix)
+            mixingMatrix = layers.Dropout(0.2)(mixingMatrix)
         mixingMatrixFF = layers.Dense(128)(mixingMatrix)
         mixingMatrixFF = TrainableXLog()(mixingMatrixFF)
         mixingMatrixFF = layers.Dropout(0.3)(mixingMatrixFF)
@@ -1266,6 +1304,7 @@ for i in range(numMixedPotentials):
     #newC1 =  SliceLayer( 0, 1)(newCoeffSet)
     #newCoeffSet = layers.BatchNormalization()(newCoeffSet)
     newCoeffSet = layers.Flatten()(newCoeffSet)
+    newCoeffSet = layers.BatchNormalization()(newCoeffSet)
     #newCoeffSet = TrainableXLog()(newCoeffSet)
     newCoeffSet = layers.Reshape( (-1,1))(newCoeffSet)
     #newCoeffSet = layers.LocallyConnected1D( 1,1)(newCoeffSet)
@@ -1352,6 +1391,7 @@ pmfEstFinal = PMFScaleLayer()( [pmfEstFinal,sqrtr0])
 
 finalCoeffMixing = layers.Dense(64)(pmfInputVarLayer)
 finalCoeffMixing = TrainableXLog()(finalCoeffMixing)
+finalCoeffMixing = layers.Dropout(0.2)(finalCoeffMixing)
 finalCoeffMixing = layers.Dense(32)(finalCoeffMixing)
 finalCoeffMixing = TrainableXLog()(finalCoeffMixing)
 finalCoeffMixing = layers.Dropout(0.5)(finalCoeffMixing)
@@ -1551,7 +1591,7 @@ class PlotPredictionsCallback(keras.callbacks.Callback):
             plt.savefig(workingDir+"/figures/epoch"+str(epoch)+".png" )
             #print("Epoch ", epoch, "Train function RMS: ", np.sqrt(trainTotalMSErr), " val function RMS: ", np.sqrt(valTotalMSErr) )
 
-uniquedataset = datasetAll.copy()
+uniquedataset = dataset.copy()
 uniquedataset['ChemValidation'] = 0
 uniquedataset['MaterialValidation'] = 0
 uniquedataset["R0Dist"] = np.sqrt( (uniquedataset["r0"] - (0.2  + uniquedataset["SurfAlignDist"] ))**2 )
@@ -1946,7 +1986,11 @@ if allowMixing == 0:
 
 
 
-
+outvarsetOutputFile=open(workingDir+"/outputvarset.txt","w")
+outvarsetOutputFile.write( ",".join(outputVarset))
+#for inputVar in aaVarSet:
+#    varsetOutputFile.write(inputVar+",")
+outvarsetOutputFile.close()
 '''
 
 #sample weighting based on A1
@@ -1966,7 +2010,7 @@ weightsNormed = weightsNormed/np.amin(weightsNormed)
 #sample weighting by coefficient clustering and then multiplicatively by the ssd type, source, shape
 
 pmfAgglomCluster = skcluster.AgglomerativeClustering(n_clusters =30)
-pmfClusterVars =   outputVarset + ["r0","resolution"]
+pmfClusterVars =   outputVarset[:11] + outputVarset[21:] + ["r0","resolution"]
 
 
 
@@ -2105,7 +2149,7 @@ with tf.device('/cpu:0'):
 
 ann_model.save(workingDir+"/final_model/")
 
-
+'''
 fulldataset = datasetAll.copy()
 fullpredictions = ( np.array( ann_model.predict([ fulldataset[aaVarSet] ]))[0,:,:,0] ).T
 
@@ -2126,4 +2170,5 @@ print("Unshuffled: ", errorSetFull)
 numShuffleTrials = 2
 
 print("Importance: shuffle one")
+'''
 

@@ -123,8 +123,8 @@ r0ValRange =  np.arange( minR0, maxR0, 0.01)
 noiseReplicas = 1
 potentialFolder = "SurfacePotentials/"
 
-outfile=open("Datasets/SurfacePotentialCoefficients-sep01.csv","w")
-noiseoutfile=open("Datasets/SurfacePotentialCoefficientsNoise-"+str(noiseReplicas)+"-aug30.csv","w")
+outfile=open("Datasets/SurfacePotentialCoefficients-sep07.csv","w")
+noiseoutfile=open("Datasets/SurfacePotentialCoefficientsNoise-"+str(noiseReplicas)+"-sep07.csv","w")
 ljHGELabels = []
 electroHGELabels = []
 waterHGELabels = []
@@ -173,7 +173,7 @@ for line in offsetDictFileLines:
         firstline = 1
         continue
     lineParts =  line.strip().split(",")
-    offsetDict[lineParts[0]] = float(lineParts[2]) 
+    offsetDict[lineParts[0]] = [float(lineParts[2]),float(lineParts[3])] 
 offsetDictFile.close()
 
 
@@ -187,7 +187,7 @@ for probeDef in allProbes:
     allLabels.append("Surf"+probeLabel+"ProbeRightEMin")    
 
 #headerSet =  [ "SurfID", "shape", "numericShape", "source",  "SurfCProbeR0" ] + CHGELabels + ["SurfKProbeR0"] + KHGELabels + ["SurfClProbeR0"] + ClHGELabels  + ["SurfWaterR0"]+ waterHGELabels
-headerSet = [ "SurfID", "shape", "numericShape", "source","ssdType" ,"SurfAlignDist"] + allLabels
+headerSet = [ "SurfID", "shape", "numericShape", "source","ssdType" ,"SurfAlignDist","SSDRefDist"] + allLabels
 outfile.write( ",".join([str(a) for a in headerSet]) +"\n")
 noiseoutfile.write( ",".join([str(a) for a in headerSet]) +"\n")
 
@@ -195,10 +195,12 @@ for material in materialSet:
     materialID = material[0]
     print("Starting material ", materialID)
     print("Surface alignment offset", offsetDict[materialID])
-    alignOffset = offsetDict[materialID]
+    alignOffsets = offsetDict[materialID]
+    alignOffset =alignOffsets[0] 
+    ssdRefDist =  alignOffsets[1]
     materialShape = material[1]
-    materialPMFSource = material[6]
-    materialSSDType = material[7]
+    materialPMFSource = material[2]
+    materialSSDType = material[3]
     numericShape = 0
     moleculePotentials = {}
     if materialShape=="cylinder":
@@ -241,7 +243,7 @@ for material in materialSet:
     for energyTarget in energyTargetSet:   
         for r0Val in r0ValRange:
             for itNum in range(noiseReplicas):
-                resSet = [ materialID, materialShape, numericShape ,materialPMFSource,materialSSDType,alignOffset]   
+                resSet = [ materialID, materialShape, numericShape ,materialPMFSource,materialSSDType,alignOffset,ssdRefDist]   
                 for probeDef in allProbes:
                     probe = probeDef[0]
                     if probeDef[1] != "":

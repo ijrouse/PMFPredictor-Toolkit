@@ -79,12 +79,12 @@ def centerProbe( probeDef):
     probeCoords[:,0] = probeCoords[:,0] - cx
     probeCoords[:,1] = probeCoords[:,1] - cy
     probeCoords[:,2] = probeCoords[:,2] - cz
-    print("centered")
+    #print("centered")
     for i in range(len(probeDef)):
         probeDef[i][0] = probeCoords[i,0]
         probeDef[i][1] = probeCoords[i,1]
         probeDef[i][2] = probeCoords[i,2] 
-        print(probeDef[i])
+        #print(probeDef[i])
     return probeDef
 
 #define parameters used for the free energy calculation
@@ -211,11 +211,16 @@ print("Electric to kJ/mol conversion: ",electroToKJMol)
 alignPointEnergyDefault = 35.0
 alignPointDist = 0.2
 pmfAlignEnergyDefault = 35.0
-#input data has the form
-#label, shape,  energy alignment value, skip energy alignment,   manual energy point at which to align the PMF, skip PMF alignment
-offsetResultFile = open("Datasets/SurfaceOffsetData.csv","w")
-offsetResultFile.write("Material,ZeroLevelOffset[nm],FEOffset[nm],PMFOffset[nm],SSDDelta[nm]\n")
 
+
+#offset file: record the material, distance from the initial co-ordinates to level the uppermost atom to z=0, offset required to level to the UC(r=0.2) = 35 kJ/mol reference, position of the reference plane relative to z = 0
+offsetResultFile = open("Datasets/SurfaceOffsetData.csv","w")
+offsetResultFile.write("Material,ZeroLevelOffset[nm],FEOffset[nm],SSDRefDist[nm]\n")
+
+
+
+#input data has the form
+##ID,shape,source,ssdType
 surfaceTargetSet = np.genfromtxt("Structures/SurfaceDefinitions.csv",dtype=str,delimiter=",")
 if surfaceTargetSet.ndim == 1:
     surfaceTargetSet = np.array([surfaceTargetSet])
@@ -225,23 +230,12 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
 
     ssdRefDist = 0
     surfaceType = surfaceTarget[1]
-    alignPointEnergy = float(surfaceTarget[2])
-    surfaceAlignOverride = int(surfaceTarget[3])
-    pmfAlignEnergy = float(surfaceTarget[4])
-    pmfAlignOverride = int(surfaceTarget[5])
-    ssdDefType = int(surfaceTarget[7]) #0 = PMFs are defined relative to a flat surface, 1 = PMFs are defined using the minimum-z-distance convention, 2 = PMFs are defined relative to the COM-COM(Plane) distance - half a slab width.
-    if surfaceTarget[8]=="sw":
-        ssdRefDist = "sw"
-    elif surfaceTarget[8]=="?":
-        ssdRefDist = "?"
-    else:
-        ssdRefDist = float(surfaceTarget[8])
+    sourceType = int(surfaceTarget[2])
+    ssdDefType = int(surfaceTarget[3]) #0 = PMFs are defined relative to a flat surface, 1 = PMFs are defined using the minimum-z-distance convention, 2 = PMFs are defined relative to the COM-COM(Plane) distance - half a slab width, 3 = PMFs are defined relative to the surface atom COM
+
     surfaceInputFile = surfaceName+"_combined.csv"
     if surfaceType=="cylinder":
-        if ssdRefDist!="?":
-            r0Start = ssdRefDist
-        else:
-            r0Start = 0.75
+        r0Start = 0.75
     else:
         r0Start = 0.00
     # indexes: 0 = numeric ID, 1 = atomID , 2= atom type, 3= x, 4 = y, 5 = z, 6 = charge, 7= mass, 8 = sigma, 9 = epsilon
@@ -250,11 +244,11 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
     print("Loaded ", len(atomNumericData), "atoms from file")
 
     alignSurface = 1
-
+    zUpperSurface  = 0
     if alignSurface == 1:
         #indexes: 0,1,2 = x,y,z, 3=charge, 4=mass, 5=sigma, 6=epsilon
         #print(atomNumericData)
-        #planes: zero-center the COM, then level the z-direction to the z=0 plane. This offset gets updated later.
+        #planes: zero-center the COM, then level the uppermost atom  to the z=0 plane, excluding small atoms and water . This offset gets updated later.
         #cylinders: these are already aligned around z=0, so just set the centre of mass to the z=0 plane
         atomNumericData[:,2] = atomNumericData[:,2] - np.sum(atomNumericData[:,2] * atomNumericData[:,4])/np.sum(atomNumericData[:,4])
         #zeroLevelOffset = np.amax(atomNumericData[   atomNumericData[:,6] > 0.1 ][:,2]  )   
@@ -271,10 +265,20 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
 
             
         newZCOM = np.sum(atomNumericData[:,2] * atomNumericData[:,4])/np.sum(atomNumericData[:,4])
-        if ssdRefDist == "sw":
-            ssdRefDist = zUpperSurface  - newZCOM - slabWidth/2.0        
-        
-        
+        if ssdDefType == 0: #defined relative to upper surface
+            ssdRefDist = 0
+        if ssdDefType == 1: #defined relative to upper surface 
+            ssdRefDist = 0        
+        if ssdDefType == 2:  #SSD is given by the distance from a point to the COM of the slab , then subtrac slabWidth/2. 
+            print( surfaceName, zUpperSurface, newZCOM, slabWidth/2.0)
+            ssdRefDist = zUpperSurface  - newZCOM - slabWidth/2.0  
+        if ssdDefType == 3:
+            #this SSD type so far is applied only to graphene-like sheets and is the "centre of mass of surface atoms", which presumably includes both carbon and oxygen for go/rgo and explicitly includes only the upper layer. to automatically process this, we find the set of uppermost carbon atoms, use this to find a cutoff for the "upper layer" and compute the offset between the upper surface and the com-surface.
+            zCarbonAtoms = atomNumericData[ np.logical_and(  atomNumericData[:,4] > 11 , atomNumericData[:,4] < 13 ) ] 
+            zCarbonOffset = np.amax( zCarbonAtoms[:,2])
+            zSurfaceAtoms = atomNumericData[ atomNumericData[:,2] > zCarbonOffset - 0.1]
+            zSurfaceCOM = np.sum(zSurfaceAtoms[:,2] * zSurfaceAtoms[:,4])/np.sum(zSurfaceAtoms[:,4])
+            ssdRefDist = zUpperSurface - zSurfaceCOM
         #print(newZCOM)
         rRange =r0Start + np.arange(newZCOM, 2.0, 0.005) #actual resolution  0.005
         if surfaceType == "cylinder":
@@ -400,33 +404,13 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
     #Update: type 2 is essentially type 1 as it's a flat plane, just potentially defined at a different point
     #Convention: before fitting the PMF, we subtract PMFDelta from all r values to shift into the frame of reference relative to the potential-plane.
     
-    '''
-    if surfaceType == "plane":
-        ssdDelta = ssdRefDist
-    else:
-        ssdDelta = 0
-    if ssdDefType == 0:
-        pmfDelta = requiredOffsetFE + ssdDelta
-    elif ssdDefType == 1:
-        print(surfaceName, " zero level original offset", zeroLevelOriginalOffset, " with exclusions" , zeroLevelOffset)
-        #this case is more complicated due to the use of the minimum z distance - there is no well-defined relation between the SSD given in the PMF and the actual z distance.  
-        pmfDelta = requiredOffsetFE
-    elif ssdDefType == 2:
-        slabWidth = np.amax(  atomNumericData[:,2] ) - np.amin( atomNumericData[:,2])
-        zUpperSurface = np.amax( atomNumericData[:,2]) 
-        pmfDelta = requiredOffsetFE  + zUpperSurface  - newZCOM - slabWidth/2.0
-    else:
-        print("Unrecognised SSD type, defaulting to type 0")
-        pmfDelta = requiredOffsetFE  
-    print( surfaceName, zeroLevelOffset, requiredOffsetFE, pmfDelta)
-    offsetResultFile.write(surfaceName +","+str(zeroLevelOffset)+","   +str(requiredOffsetFE)+","+str(pmfDelta)+"\n")
-    '''
+
     if surfaceType == "plane":
         ssdDelta = ssdRefDist
     else:
         ssdDelta = 0
     pmfDelta = requiredOffsetFE + ssdDelta
-    offsetResultFile.write(surfaceName +","+str(zeroLevelOffset)+","   +str(requiredOffsetFE)+","+str(pmfDelta)+","+str(ssdDelta)+"\n")    
+    offsetResultFile.write(surfaceName +","+str(zeroLevelOffset)+","   +str(requiredOffsetFE)+","+str(ssdRefDist) +"\n")    
     np.savetxt(outputTarget, resArray, fmt='%2.7f',delimiter=",", header=feFileHeader)
 
     #calculate extra molecules and save them out to individual files
@@ -438,7 +422,7 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
             continue
         else:
             print("Starting", moleculeTag)
-        rRangeWater =r0Start + np.arange(lastInfPoint-r0Start, 1.6,  0.01 ) #usual resolution 0.01     
+        rRangeWater =r0Start + np.arange(r0Start - requiredOffsetFE, 1.6,  0.01 ) #usual resolution 0.01   , starting point:  r-r0Start   + requiredOffsetFE = 0 -> r = r0Start - requiredOffsetFE
         #rRangeWater = np.arange(0.1,0.3,0.005) 
         waterResList = []   
         for r in rRangeWater:      
