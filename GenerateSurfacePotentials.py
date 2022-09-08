@@ -25,8 +25,6 @@ args = parser.parse_args()
 
 #define parameters used for the free energy calculation
 temperature = 300.0
-probeEpsilon = 0.3598
-probeSigma = 0.339
 dielectricConst = 1 
 
 
@@ -149,27 +147,19 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
             numc2=23
             c1Range = np.linspace(0,2*np.pi, num = numc1, endpoint=False)
             c2Range = np.linspace(-1.0, 1.0, num = numc2, endpoint=True)
-            c1grid,c2grid = np.meshgrid(   c1Range, c2Range) 
-            #sigmaBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,5] , (numc1,numc2,len(atomNumericData)) ))
-            #epsBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,6] , (numc1,numc2,len(atomNumericData)) ))
-            #chargeBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,3] , (numc1,numc2,len(atomNumericData)) ))
-            #sigmaBroadcast = 0.5*(sigmaBroadcast + probeSigma)
-            #epsBroadcast = np.sqrt( epsBroadcast*probeEpsilon)
         else:
             numc1=23
             numc2=23
             c1Range = np.linspace(-planeScanHalfLength, planeScanHalfLength, num = numc1, endpoint=True)
             c2Range = np.linspace(-planeScanHalfLength, planeScanHalfLength, num = numc2, endpoint=True)
-            areaTerm = (c2Range[-1] - c2Range[0]) * (c1Range[-1] - c1Range[0])
-            c1grid,c2grid = np.meshgrid(c1Range,c2Range)
-            #sigmaBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,5] , (numc1,numc2,len(atomNumericData)) ))
-            #epsBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,6] , (numc1,numc2,len(atomNumericData)) ))
-            #chargeBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,3] , (numc1,numc2,len(atomNumericData)) ))
-            #sigmaBroadcast = 0.5*(sigmaBroadcast + probeSigma)
-            #epsBroadcast = np.sqrt( epsBroadcast*probeEpsilon)
-        sigmaBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,5] , (  len(c1Range),len(c2Range),len(atomNumericData)) ))
-        epsBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,6] , (len(c1Range),len(c2Range),len(atomNumericData)) ))
-        chargeBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,3] , (len(c1Range),len(c2Range),len(atomNumericData)) ))
+        atomNumRange = np.arange(len(atomNumericData))
+        c1grid,c2grid,atomIndexGrid = np.meshgrid(   c1Range, c2Range,atomNumRange) 
+        #sigmaBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,5] , (  len(c1Range),len(c2Range),len(atomNumericData)) ))
+        #epsBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,6] , (len(c1Range),len(c2Range),len(atomNumericData)) ))
+        #chargeBroadcast = np.transpose( np.broadcast_to( atomNumericData[:,3] , (len(c1Range),len(c2Range),len(atomNumericData)) ))
+        sigmaBroadcast = atomNumericData[atomIndexGrid,5]
+        epsBroadcast = atomNumericData[atomIndexGrid,6]
+        chargeBroadcast = atomNumericData[atomIndexGrid,3]
         lastInfPoint = rRange[0] - 1
         lastAllInfPoint = lastInfPoint
         lastWaterInfPoint = lastInfPoint
@@ -186,19 +176,13 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
             
     if skipPointProbe == 0:       
         for r in rRange:
-            #vdw and electrostatic probes
-            distList = []
-            for i in range(len(atomNumericData)): #There is probably a more efficient way of doing this but in the interest of clarity this is easier to debug.
-                if surfaceType == "cylinder":
-                    atomDist = np.sqrt( ( r* np.cos(c1grid) - atomNumericData[i,0] )**2 + ( r* np.sin(c1grid) - atomNumericData[i,1] )**2  + ( c2grid - atomNumericData[i,2] )**2 )
-                    distList.append(atomDist)
-                else:
-                    atomDist = np.sqrt(   ( c1grid - atomNumericData[i,0])**2 + (c2grid - atomNumericData[i,1])**2 + (r - atomNumericData[i,2])**2  )
-                    distList.append(atomDist)
-            distArray = np.array(distList)
+            if surfaceType == "cylinder":
+                distArray = np.sqrt( ( r* np.cos(c1grid) - atomNumericData[atomIndexGrid,0] )**2 + ( r* np.sin(c1grid) - atomNumericData[atomIndexGrid,1] )**2  + ( c2grid - atomNumericData[atomIndexGrid,2] )**2 )
+            else:
+                distArray = np.sqrt(   ( c1grid - atomNumericData[atomIndexGrid,0])**2 + (c2grid - atomNumericData[atomIndexGrid,1])**2 + (r - atomNumericData[atomIndexGrid,2])**2  )
             electricContributions = chargeBroadcast  / distArray
             scaledDists = sigmaBroadcast/distArray 
-            allContributions = np.sum( 4*epsBroadcast*( scaledDists**12 - scaledDists**6) , axis=0)
+            allContributions = np.sum( 4*epsBroadcast*( scaledDists**12 - scaledDists**6) , axis=-1)
             ones = 1 + np.zeros_like(allContributions)
             #print(ones)
             #freeEnergy=-conversionFactor * np.log( np.sum(   np.exp( -allContributions / conversionFactor) )  / np.sum(ones) )
@@ -212,38 +196,20 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
                 epsCombined = np.sqrt(epsBroadcast * probe[2])
                 sigmaCombined = 0.5*(sigmaBroadcast + probe[1])
                 #print(electroToKJMol*probe[3]*electricContributions )
-                electrostaticPotential = np.sum( electroToKJMol*probe[3]*electricContributions   , axis=0)
+                electrostaticPotential = np.sum( electroToKJMol*probe[3]*electricContributions   , axis=-1)
                 scaledDists = sigmaCombined/distArray 
                 if probe[4] == 1:
                     beadRadius = 0.5
                     hamterm1 = (4 * beadRadius**3) /(  ( beadRadius**2 - distArray**2  )**3  )
                     hamterm2 = (sigmaCombined**6/(120.0 * distArray))*(  ( distArray + 9 * beadRadius )/(  (beadRadius+distArray)**9    )    -  (  distArray-9*beadRadius   )/(   ( distArray - beadRadius  )**9    )     )
-                    ljPotential = np.sum( 4.0/3.0 * np.pi * epsCombined * sigmaCombined**6 * (hamterm1 + hamterm2)     , axis=0)
+                    ljPotential = np.sum( 4.0/3.0 * np.pi * epsCombined * sigmaCombined**6 * (hamterm1 + hamterm2)     , axis=-1)
                 else:
-                    ljPotential = np.sum( 4 * epsCombined * (scaledDists**12 - scaledDists**6 ), axis=0) #sum over atoms
-                #print( (4 * epsCombined * (scaledDists**12 - scaledDists**6 )).shape, (electroToKJMol*probe[3]*electricContributions).shape)
-                #print(probe)
-                #print("LJ")
-                #print(ljPotential)
-                #print("Electro")
-                #print(electrostaticPotential)
-
+                    ljPotential = np.sum( 4 * epsCombined * (scaledDists**12 - scaledDists**6 ), axis=-1) #sum over atoms
                 totalPotential = electrostaticPotential + ljPotential
                 probeFreeEnergy=-conversionFactor * np.log( np.sum(   np.exp( -totalPotential / conversionFactor) )  / np.sum(ones) )
                 if not np.isfinite(probeFreeEnergy):
                     probeFreeEnergy = np.amin(totalPotential)
                 probeSimpleEnergy = np.amin(totalPotential)
-                #print(np.sum(totalPotential))
-                #print(r, np.sum(   np.exp( -totalPotential / conversionFactor) ) , -conversionFactor * np.log( np.sum(   np.exp( -totalPotential / conversionFactor) )  / np.sum(ones)))
-                #calculate the free energy using the standard expression if it's safe to do so and min/max if not. 
-                #if np.any( totalPotential < -300     ):
-                #    probeFreeEnergy = np.amin(totalPotential)
-                #elif np.all(totalPotential > 200):
-                #    probeFreeEnergy = np.amin(totalPotential)
-                #else:
-                #    probeFreeEnergy=-conversionFactor * np.log( np.sum(   np.exp( -totalPotential / conversionFactor) )  / np.sum(ones) )
-                
-                #print(r, probe, probeFreeEnergy)
                 probeFESet.append(probeFreeEnergy)
                 probeSimpleSet.append(probeSimpleEnergy)                
                 #print( r, probe[0], probeFreeEnergy)
@@ -314,28 +280,29 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
                         ax = atom[0] * rotateMatrixInternal[0,0] + atom[1]*rotateMatrixInternal[0,1] + atom[2]*rotateMatrixInternal[0,2]
                         ay = atom[0] * rotateMatrixInternal[1,0] + atom[1]*rotateMatrixInternal[1,1] + atom[2]*rotateMatrixInternal[1,2]
                         az = atom[0] * rotateMatrixInternal[2,0] + atom[1]*rotateMatrixInternal[2,1] + atom[2]*rotateMatrixInternal[2,2]
-                        distList = []
-                        for i in range(len(atomNumericData)): #There is probably a more efficient way of doing this but in the interest of clarity this is easier to debug. ax = probe atom x, atomNumericData[i,0] is structure atom i
-                            if surfaceType == "cylinder":
-                                atomDist = np.sqrt( ( r* np.cos(c1grid) + ax - atomNumericData[i,0] )**2 + ( r* np.sin(c1grid) + ay - atomNumericData[i,1] )**2  + ( c2grid + az -atomNumericData[i,2] )**2 )
-                                minz = min(minz, np.sqrt(np.amin( ( r* np.cos(c1grid) + ax - atomNumericData[i,0] )**2 + ( r* np.sin(c1grid) + ay - atomNumericData[i,1] )**2)))
-                                distList.append(atomDist)
-                            else:
-                                atomDist = np.sqrt(   ( c1grid + ax - atomNumericData[i,0])**2 + (c2grid + ay - atomNumericData[i,1])**2 + (r + az - atomNumericData[i,2])**2  )
-                                minz = min(minz, r + az - atomNumericData[i,2]) 
-                                distList.append(atomDist)
-                        distArray = np.array(distList)
-                        #print( np.amin(distArray) )
-                        electricContributions = np.sum( chargeBroadcast  / distArray , axis=0 )
+                        #distList = []
+                        #for i in range(len(atomNumericData)): #There is probably a more efficient way of doing this but in the interest of clarity this is easier to debug. ax = probe atom x, atomNumericData[i,0] is structure atom i
+                        #    if surfaceType == "cylinder":
+                        #        atomDist = np.sqrt( ( r* np.cos(c1grid) + ax - atomNumericData[i,0] )**2 + ( r* np.sin(c1grid) + ay - atomNumericData[i,1] )**2  + ( c2grid + az -atomNumericData[i,2] )**2 )
+                        #        minz = min(minz, np.sqrt(np.amin( ( r* np.cos(c1grid) + ax - atomNumericData[i,0] )**2 + ( r* np.sin(c1grid) + ay - atomNumericData[i,1] )**2)))
+                        #        distList.append(atomDist)
+                        #    else:
+                        #        atomDist = np.sqrt(   ( c1grid + ax - atomNumericData[i,0])**2 + (c2grid + ay - atomNumericData[i,1])**2 + (r + az - atomNumericData[i,2])**2  )
+                        #        minz = min(minz, r + az - atomNumericData[i,2]) 
+                        #        distList.append(atomDist)
+                        #distArray = np.array(distList)
+
+                        if surfaceType == "cylinder":
+                            distArray = np.sqrt( ( r* np.cos(c1grid) + ax - atomNumericData[atomIndexGrid,0] )**2 + ( r* np.sin(c1grid) + ay - atomNumericData[atomIndexGrid,1] )**2  + ( c2grid + az -atomNumericData[atomIndexGrid,2] )**2 )
+                        else:
+                            distArray = np.sqrt(   ( c1grid + ax - atomNumericData[atomIndexGrid,0])**2 + (c2grid + ay - atomNumericData[atomIndexGrid,1])**2 + (r + az - atomNumericData[atomIndexGrid,2])**2  )
+
+                        #print( np.amin(distArray)   ) 
+                        electricContributions = np.sum( chargeBroadcast  / distArray , axis=-1 )
                         scaledDists = sigmaCombined/distArray 
-                        ljContributions =  np.sum( 4*epsCombined*( scaledDists**12 - scaledDists**6) , axis=0)
+                        ljContributions =  np.sum( 4*epsCombined*( scaledDists**12 - scaledDists**6) , axis=-1)
                         allContributions += (electroToKJMol*atom[3]*electricContributions + ljContributions)
                     waterMin = min( waterMin, np.amin(allContributions)) #this is used only if there's no better value under the assumption its either the least bad or most favourable
-                    if np.amin(allContributions) < minEnergy:
-                        minEnergy = np.amin(allContributions)
-                        minData[0] = theta
-                        minData[1] = phi
-                        minData[2] = minz
                     ones = (  1 + np.zeros_like(allContributions) )
                     runningNumerator += np.sum(  np.exp(-allContributions/conversionFactor)     )* np.sin(theta)
                     runningDenominator += np.sum(ones * np.sin(theta))
