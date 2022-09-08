@@ -9,7 +9,8 @@ import os
 import scipy.special as scspec
 import scipy.integrate
 import argparse
-
+import HGEFuncs
+import GeometricFuncs
 
 parser = argparse.ArgumentParser(description="Parameters for GenerateChemicalPotentials")
 parser.add_argument("-f","--forcerecalc", type=int,default=0,help="If 1 then potentials are recalculated even if their table already exists")
@@ -18,36 +19,7 @@ args = parser.parse_args()
 if args.forcerecalc == 1:
     print("Recalculating all potentials")
 
-def estimateValueLocation( potential, target):
-    firstIndex =   np.nonzero( potential[:,1] < target)[0][0] 
-    if firstIndex < 1:
-        return (potential[firstIndex,0],potential[firstIndex,0])
-    pointa = potential[firstIndex - 1]
-    pointb = potential[firstIndex]
-    mEst = (pointb[1] - pointa[1])/(pointb[0] - pointa[0])
-    cEst = -( ( pointb[0]*pointa[1] - pointa[0]*pointb[1]  )/(  pointa[0] - pointb[0] )  )
-    crossingEst = (target - cEst) / mEst
-    return (crossingEst,target)
 
-
-
-def rotateMatrix(theta,phi):
-    return np.array([ [ np.cos(theta) * np.cos(phi) , -1 * np.cos(theta) * np.sin(phi) , np.sin(theta) ],
-      [  np.sin(phi)                 ,   np.cos(phi)                    , 0 ],
-      [ -1 * np.sin(theta) * np.cos(phi) ,   np.sin(theta) * np.sin(phi) , np.cos(theta) ]
-    ])
-
-def HGEFunc(r, r0, n):
-    return (-1)**(1+n) * np.sqrt( 2*n - 1) * np.sqrt(r0)/r * scspec.hyp2f1(1-n,n,1,r0/r)
-    
-    
-def HGECoeffs( inputPotential, r0Val, nmax):
-    r0Actual = max(np.amin(inputPotential[:,0]), r0Val)
-    hgeCoeffRes = [r0Actual]
-    for n in range(1,nmax+1):
-        hgeCoeff =  scipy.integrate.simpson( inputPotential[:,1]*HGEFunc( inputPotential[:,0] ,r0Actual, n),  inputPotential[:,0] )
-        hgeCoeffRes.append(hgeCoeff)
-    return hgeCoeffRes
     
 def centerProbe( probeDef):
     m=0
@@ -334,7 +306,7 @@ for target in targetSet:
             thetaRange = np.arange( thetaDelta, 180 , thetaDelta)*np.pi/180.0
             for theta in  thetaRange:
                 for phi in np.linspace(0,2*np.pi, num = 8, endpoint=False):
-                    rotateMatrixInternal = rotateMatrix(np.pi - theta,-phi)
+                    rotateMatrixInternal = GeometricFuncs.RotateMatrix(np.pi - theta,-phi)
                     allContributions = 0
                     for atom in moleculeStructure:
                         #print(theta,phi,atom)

@@ -10,7 +10,6 @@ import pandas as pd
 from tensorflow.keras.layers.experimental.preprocessing import TextVectorization
 from tensorflow.keras.backend import cast
 from tensorflow import strings
-from tensorflow.strings import bytes_split
 from tensorflow.keras.utils import plot_model
 import scipy.special as scspec
 import datetime
@@ -267,37 +266,7 @@ def singleStepPredict(model,dataset):
     return dataset
 
 
-def buildDatasetAtR0(r0):
-    chemDataset = targetMolecules.copy()
-    surfDataset = targetSurfaces.copy()
-    chemDataset["R0Dist"] = np.sqrt((chemDataset["ChemCProbeR0"].to_numpy() -  r0)**2)
-    chemDataset.sort_values( by=["R0Dist"] ,ascending=True, inplace=True)
-    chemDataset = chemDataset.drop_duplicates( subset=['ChemID']  ,keep='first')       
-    surfDataset["R0Dist"] = np.sqrt((surfaceSetWorking["SurfCProbeR0"].to_numpy() - currentr0)**2)
-    surfDataset.sort_values( by=["R0Dist"] ,ascending=True, inplace=True)
-    surfDataset = surfDataset.drop_duplicates( subset=['SurfID']  ,keep='first')  
-    return pd.merge(chemDataset,surfDataset,how="cross")
 
-
-def mergePredict():
-    r0Range = np.array([0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9])
-    rRange = np.arange(0.1,1.5,0.05)
-    
-    for r0Val in r0Range:
-        combinedDatasetAtR0 = buildDatasetAtR0(r0Val)
-        combinedDatasetAtR0["r0"] = r0Val
-        combinedDatasetAtR0["EMin"] = -1
-        combinedDatasetAtR0["rEMin"] = 0.5
-        combinedDatasetAtR0[  "lastE0" ] = 0
-        combinedDatasetAtR0[  "fittedE0" ] = targetE0
-        predictionSet = ( np.array( model.predict([ combinedDatasetAtR0[ aaVarSet]      ])[0]   )[:,:,0] ).T
-        for i in range(len(outputVarset)):
-            combinedDatasetAtR0[ outputVarset[i]+"_regpredict" ] =predictionSet[:,i].flatten()  
-            if i<16:
-                combinedDatasetAtR0[   "lastE0" ] = combinedDatasetAtR0[  "lastE0" ] + np.sqrt(2*(i+1) - 1) * (predictionSet[:,i].flatten() ) /np.sqrt(currentr0)
-                
-                
-                
                 
 def recurrentPredictV2(model, dataset, direction=-1, r0Min = 0.05, r0Max=0.9, targetE0 = 20):
 

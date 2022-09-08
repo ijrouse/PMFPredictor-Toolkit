@@ -10,7 +10,6 @@ import pandas as pd
 from tensorflow.keras.layers.experimental.preprocessing import TextVectorization
 from tensorflow.keras.backend import cast
 from tensorflow import strings
-from tensorflow.strings import bytes_split
 from tensorflow.keras.utils import plot_model
 
 

@@ -10,61 +10,14 @@ import scipy.special as scspec
 import scipy.integrate
 import argparse
 import numpy.linalg as npla
+import HGEFuncs
+import GeometricFuncs
 
 parser = argparse.ArgumentParser(description="Parameters for GenerateChemicalPotentials")
 parser.add_argument("-f","--forcerecalc", type=int,default=0,help="If 1 then potentials are recalculated even if their table already exists")
 parser.add_argument("-i","--initial", type=int, default=0,help="Initial structure to start calculating for multiprocessing")
 parser.add_argument("-s","--step", type=int, default=1,help="Stride for slicing for multiprocessing")
 args = parser.parse_args()
-
-
-def estimateValueLocation( potential, target):
-    firstIndex =   np.nonzero( potential[:,1] < target)[0][0] 
-    if firstIndex < 1:
-        return (potential[firstIndex,0],potential[firstIndex,0])
-    pointa = potential[firstIndex - 1]
-    pointb = potential[firstIndex]
-    mEst = (pointb[1] - pointa[1])/(pointb[0] - pointa[0])
-    cEst = -( ( pointb[0]*pointa[1] - pointa[0]*pointb[1]  )/(  pointa[0] - pointb[0] )  )
-    crossingEst = (target - cEst) / mEst
-    return (crossingEst,target)
-
-
-
-def rotateMatrix(theta,phi):
-    return np.array([ [ np.cos(theta) * np.cos(phi) , -1 * np.cos(theta) * np.sin(phi) , np.sin(theta) ],
-      [  np.sin(phi)                 ,   np.cos(phi)                    , 0 ],
-      [ -1 * np.sin(theta) * np.cos(phi) ,   np.sin(theta) * np.sin(phi) , np.cos(theta) ]
-    ])
-
-def HGEFunc(r, r0, n):
-    return (-1)**(1+n) * np.sqrt( 2*n - 1) * np.sqrt(r0)/r * scspec.hyp2f1(1-n,n,1,r0/r)
-    
-    
-def HGECoeffs( inputPotential, r0Val, nmax):
-    r0Actual = max(np.amin(inputPotential[:,0]), r0Val)
-    hgeCoeffRes = [r0Actual]
-    for n in range(1,nmax+1):
-        hgeCoeff =  scipy.integrate.simpson( inputPotential[:,1]*HGEFunc( inputPotential[:,0] ,r0Actual, n),  inputPotential[:,0] )
-        hgeCoeffRes.append(hgeCoeff)
-    return hgeCoeffRes
-
-def getTransformMatrix(coordArr):
-    ixx = np.sum(coordArr[:,1]**2 + coordArr[:,2]**2)
-    ixy = np.sum(- coordArr[:,0]*coordArr[:,1])
-    ixz = np.sum(-coordArr[:,0]*coordArr[:,2])
-    iyy = np.sum(coordArr[:,0]**2 + coordArr[:,2]**2)
-    iyx = ixy
-    iyz = np.sum(-coordArr[:,1]*coordArr[:,2])
-    izz = np.sum(coordArr[:,0]**2 + coordArr[:,1]**2)
-    izx = ixz
-    izy = iyz
-    inertialArray = np.array([ [ixx, ixy,ixz],[iyx,iyy,iyz],[izx,izy,izz] ])
-    eigvals,eigvecs = npla.eig(inertialArray)
-    #invarr = npla.inv(eigvecs)
-    sortIndex = eigvals.argsort()[::-1]
-    invarr = npla.inv(eigvecs[:,sortIndex])
-    return invarr
 
 
 def centerProbe( probeDef):
@@ -96,18 +49,7 @@ dielectricConst = 1
 
 #point probes. the first must be left unchanged because this is used to determine the surface level.
 #name, sigma,epsilon,   charge, LJ model (=0 for point, =1 for flat disk of radius 0.5nm)
-'''
-pointProbes =[
-["C",0.339,0.3598,0,0 ],
-["K",0.314264522824 ,  0.36401,1,0],
-["Cl",0.404468018036 , 0.62760,-1,0],
-["C2A",0.2,0.3598,0,0],
-["C4A", 0.4, 0.3598,0,0],
-["C6A", 0.6, 0.3598,0,0],
-["C8A", 0.8, 0.3598,0,0],
-["C10A",1.0,0.3598,0,0]
-]
-'''
+
 
 pointProbes =[
 ["C",0.339,0.3598,0,0],
@@ -394,7 +336,7 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
         resArray[:,2] = resArray[:,1]
 
     #Find the point at which the carbon probe has an energy of 35 kJ/mol, which we then define to be the point at which r = 0.2
-    (freeEnergyAlignPoint, freeEnergyAlignActual) = estimateValueLocation(resArray[:, (2,3)],alignPointEnergyDefault)    
+    (freeEnergyAlignPoint, freeEnergyAlignActual) = HGEFuncs.estimateValueLocation(resArray[:, (2,3)],alignPointEnergyDefault)    
     #alignPointDist is by default 0.2 . if the free energy align point is found at 0.5, we need to move the potential by -0.3 to align them.
     requiredOffsetFE = alignPointDist - freeEnergyAlignPoint    
     resArray[:,2] = resArray[:,2] + requiredOffsetFE
@@ -439,7 +381,7 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
             minData = [0,0,0] #phi,theta
             for theta in  thetaRange: #np.linspace(0,np.pi, num = 5, endpoint=True) : #usual 5 values
                 for phi in np.linspace(0,2*np.pi, num =phiNum, endpoint=False): #usual 8 values
-                    rotateMatrixInternal = rotateMatrix(np.pi - theta,-phi)
+                    rotateMatrixInternal = GeometricFuncs.UARotateMatrix(np.pi - theta,-phi)
                     allContributions = 0
                     minz = 20
                     for atom in moleculeStructure:

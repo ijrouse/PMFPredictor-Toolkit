@@ -9,102 +9,16 @@ import scipy.integrate
 import scipy.interpolate
 import warnings
 import argparse
+import HGEFuncs
 
 parser = argparse.ArgumentParser(description="Parameters for HGExpandSurfacePotential")
 parser.add_argument("-f","--forcerecalc", type=int,default=0,help="If 1 then potential HGE coeffs are recalculated even if their table already exists")
 args = parser.parse_args()
+warnings.filterwarnings('ignore')
 
-
-
-
-def HGEFunc(r, r0, n):
-    return (-1)**(1+n) * np.sqrt( 2*n - 1) * np.sqrt(r0)/r * scspec.hyp2f1(1-n,n,1,r0/r)
-    
-
-
-def HGECoeffsInterpolate( inputPotential, r0Val, nmax):
-    r0Actual = r0Val
-    potentialInterpolated = scipy.interpolate.interp1d(inputPotential[:,0],inputPotential[:,1],  bounds_error=False,fill_value="extrapolate")
-    #start from  just before r0 or the second recorded point, whichever is higher and to ensure the gradients are still somewhat sensible
-    rminVal =  max( r0Actual, inputPotential[1,0])
-    rmaxVal = inputPotential[-1,0]
-    #rRange = np.arange( max( r0Actual, inputPotential[0,0]), inputPotential[-1,0], 0.000001)
-    #potentialUpscaled = potentialInterpolated(rRange)
-    
-    #inputRange = inputPotential [ np.logical_and( inputPotential[:,0] > r0Actual ,inputPotential[:,0] <= 1.5 ) ]
-    #print("Integrating over ", rRange[0] , " to ", rRange[-1])
-    hgeCoeffRes = [r0Actual]
-    for n in range(1,nmax+1):
-        integrand = lambda x: potentialInterpolated(x) * HGEFunc(x, r0Actual, n)
-        #hgeCoeff =  scipy.integrate.trapz( potentialUpscaled*HGEFunc( rRange,r0Actual, n),  rRange )
-        hgeCoeffGaussian = scipy.integrate.quadrature( integrand, rminVal, rmaxVal, maxiter=100)
-        hgeCoeffRes.append(hgeCoeffGaussian[0])
-    #print(hgeCoeffRes)
-    return hgeCoeffRes
-
-def HGECoeffs( inputPotential, r0Val, nmax):
-    #r0Actual = max(np.amin(inputPotential[:,0]), r0Val)
-    r0Actual = r0Val
-    potentialInterpolated = scipy.interpolate.interp1d(inputPotential[:,0],inputPotential[:,1], bounds_error=False, fill_value = (10*inputPotential[0,1],  0),kind='slinear')
-    #start from either r0+0.001 or the first recorded point, whichever is higher 
-    #print(inputPotential[-1,0])
-    #print(max( r0Actual+0.00001, inputPotential[0,0]))
-    rRange = np.arange( max( r0Actual, inputPotential[0,0]), inputPotential[-1,0], 0.00005)
-    potentialUpscaled = potentialInterpolated(rRange)
-    
-    #inputRange = inputPotential [ np.logical_and( inputPotential[:,0] > r0Actual ,inputPotential[:,0] <= 1.5 ) ]
-    #print("Integrating over ", rRange[0] , " to ", rRange[-1])
-    hgeCoeffRes = [r0Actual]
-    for n in range(1,nmax+1):
-        hgeCoeff =  scipy.integrate.trapz( potentialUpscaled*HGEFunc( rRange,r0Actual, n),  rRange )
-        hgeCoeffRes.append(hgeCoeff)
-    return hgeCoeffRes
-
-def BuildHGEFromCoeffs(r , coeffSet):
-    r0Val = coeffSet[0]
-    validRegion = r > r0Val
-    funcVal = np.zeros_like(r[validRegion])
-    for i in range(2,len(coeffSet)):
-        funcVal += HGEFunc(r[validRegion], r0Val, i-1) * coeffSet[i]
-    return funcVal
-
-def estimateValueLocation( potential, target):
-    if np.all( potential[:,1] > target):
-        return (0.2,500) #no matches found - return a default value
-    firstIndex =   np.nonzero( potential[:,1] < target)[0][0] 
-    if firstIndex < 1:
-        return (potential[firstIndex,0],potential[firstIndex,0])
-    pointa = potential[firstIndex - 1]
-    pointb = potential[firstIndex]
-    mEst = (pointb[1] - pointa[1])/(pointb[0] - pointa[0])
-    cEst = -( ( pointb[0]*pointa[1] - pointa[0]*pointb[1]  )/(  pointa[0] - pointb[0] )  )
-    crossingEst = (target - cEst) / mEst
-    return (crossingEst,target)
-    
-def getValidRegion(potential,rmin=0.05):
-    MaskStart =  np.where(  np.logical_and(  potential[:,0] >= rmin  ,       np.isfinite( potential[:,1] )       ))[0][0]
-    #MaskStart =  np.where(  np.logical_and(  potential[:,0] >= rmin  ,np.logical_and(np.logical_and(    np.isfinite( potential[:,1] )     , potential[:,1] > -1000)  , potential[:,1] < 1000     ) ))[0][0]
-    MaskEnd = np.where(  potential[:,0] > 1.5)[0][0]
-    return potential[ MaskStart:MaskEnd ]
-
-
-def applyNoiseUniform(freeEnergySet):
-    freeEnergySet[:,0] = freeEnergySet[:,0] + np.random.uniform( -0.05, 0.05)  
-    freeEnergySet[:,1] = freeEnergySet[:,1] * np.random.uniform( 1-0.1,1+0.1) + np.random.uniform( -0.1,0.1, len(freeEnergySet))
-    return freeEnergySet
-    
          
 
-def applyNoise(freeEnergySet):
-    #translate with probability 0.5
-    freeEnergySet[:,0] = freeEnergySet[:,0] + np.random.normal( 0, 0.01)
-    freeEnergySet[:,1] = freeEnergySet[:,1] * np.random.normal( 1, 0.1) + np.random.normal( 0, 0.2, len(freeEnergySet))
-    return freeEnergySet
-
-
  #material ID, shape, source
-
-warnings.filterwarnings('ignore')
 materialSet = np.genfromtxt("Structures/SurfaceDefinitions.csv",dtype=str,delimiter=",")
 if materialSet.ndim == 1:
     materialSet = np.array([materialSet])
@@ -247,7 +161,7 @@ for material in materialSet:
                 for probeDef in allProbes:
                     probe = probeDef[0]
                     if probeDef[1] != "":
-                        probeFreeEnergies = getValidRegion(   np.copy( moleculePotentials[probeDef[0]] )[:,(2,3)] )
+                        probeFreeEnergies = HGEFuncs.getValidRegion(   np.copy( moleculePotentials[probeDef[0]] )[:,(2,3)] )
                         #probeFreeEnergies = getValidRegion( waterFreeEnergies[:,(2,3)] )
                     #elif probe=="Methane":
                     #    probeFreeEnergies = getValidRegion( methaneFreeEnergies[:,(2,3)])
@@ -255,10 +169,10 @@ for material in materialSet:
                         probeHeader = "U"+probe+"dkJmol"
                         probeNumber = freeEnergyHeader.index(probeHeader)
                         #print(probe,probeNumber,freeEnergies[:,(2,probeNumber)])
-                        probeFreeEnergies  = getValidRegion( freeEnergies[:,(2,probeNumber)])
+                        probeFreeEnergies  = HGEFuncs.getValidRegion( freeEnergies[:,(2,probeNumber)])
                         #print(probeFreeEnergies)
                     if itNum > 0:
-                        probeFreeEnergies = applyNoise(probeFreeEnergies)
+                        probeFreeEnergies = HGEFuncs.applyNoise(probeFreeEnergies)
                     probeFinalEnergy = probeFreeEnergies[-1,1]
                     probeFreeEnergies[:,1] = probeFreeEnergies[:,1] - probeFinalEnergy
                     probeSubsetMask = probeFreeEnergies[:,0] >= r0Val 
@@ -266,7 +180,7 @@ for material in materialSet:
                     probeMinEnergy = np.amin( probeFreeEnergies[:,1])
                     probeRightMinEnergy = np.amin( probeFreeEnergiesSubset[:,1])
                     #r0Val =0.2 # max(0.1, estimateValueLocation(probeFreeEnergies,energyTarget)[0])
-                    probeHGE= HGECoeffs( probeFreeEnergies, r0Val, nMaxValAll)
+                    probeHGE= HGEFuncs.HGECoeffs( probeFreeEnergies, r0Val, nMaxValAll)
                     probeHGE.insert(1, probeFinalEnergy)
                     probeHGE.append(probeMinEnergy)
                     probeHGE.append(probeRightMinEnergy)
@@ -281,26 +195,3 @@ for material in materialSet:
                 
                 
 outfile.close()
-'''                
-            if plotFigs == 1:
-                plt.figure()
-                plt.plot( CProbeFE[::5,0], CProbeFE[::5,1] ,"kx")
-                #print(CProbeFE[ CProbeFE[:,0] > CProbeHGE[0]  ,0])
-                plt.plot( CProbeFE[ CProbeFE[:,0] > CProbeHGE[0]  ,0], BuildHGEFromCoeffs( CProbeFE[:,0], CProbeHGE) ,"k-")
-                plt.plot( KProbeFE[::5,0], KProbeFE[::5,1] ,"rx")
-                plt.plot( KProbeFE[ KProbeFE[:,0] > KProbeHGE[0]  ,0], BuildHGEFromCoeffs(KProbeFE[:,0], KProbeHGE) ,"r-")
-                plt.plot( ClProbeFE[::5,0], ClProbeFE[::5,1] ,"gx")
-                plt.plot( ClProbeFE[ ClProbeFE[:,0] > ClProbeHGE[0]  ,0], BuildHGEFromCoeffs( ClProbeFE[:,0], ClProbeHGE) ,"g-")
-                #print(waterFreeEnergies[::,2], waterFreeEnergies[::,3])
-                plt.plot( waterFreeEnergies[::,0], waterFreeEnergies[::,1] ,"bx")
-                waterRange = np.linspace( waterHGE[0]+0.01, 1.5, 100)
-                plt.plot(waterRange, BuildHGEFromCoeffs( waterRange, waterHGE) ,"b-")
-                minPlotEnergy = min ( np.amin(waterFreeEnergies[:,1]), np.amin( freeEnergies[:,4]), np.amin(freeEnergies[:,3]))
-                #plt.ylim(minPlotEnergy-5,50)
-                plt.xlim(0,1.5)
-                plt.ylim(top=50)
-                plt.savefig( potentialFolder+"/"+materialID+"-fitted.png")
-outfile.close()
-
-#plt.show()
-'''

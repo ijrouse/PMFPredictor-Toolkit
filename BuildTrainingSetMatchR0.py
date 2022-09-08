@@ -9,28 +9,7 @@ import scipy.special as scspec
 import datetime
 import random
 
-'''
-chemicalCoefficientFile = open("Datasets/ChemicalPotentialCoefficients.csv","r")
-chemHeader=chemicalCoefficientFile.readline().strip().split(",")
-chemDict = {}
-knownChems = chemicalCoefficientFile.readlines()
-for chemLine in knownChems:
-    chemLineTerms = chemLine.strip().split(",")
-    chemDict[chemLineTerms[0]] =chemLineTerms
-#print(chemDict)
-chemicalCoefficientFile.close()
 
-
-surfaceCoefficientFile = open("Datasets/SurfacePotentialCoefficients.csv","r")
-surfaceHeader=surfaceCoefficientFile.readline().strip().split(",")
-surfaceDict = {}
-knownSurfaces = surfaceCoefficientFile.readlines()
-for surfaceLine in knownSurfaces:
-    surfaceLineTerms = surfaceLine.strip().split(",")
-    surfaceDict[surfaceLineTerms[0]] = surfaceLineTerms
-#print(surfaceDict)
-surfaceCoefficientFile.close()
-'''
 numReplicates = 1
 
 if numReplicates==1:
