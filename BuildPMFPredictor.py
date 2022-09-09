@@ -194,31 +194,50 @@ class TrainableXLog(keras.layers.Layer):
         #return  tf.math.sign(inputs) * tf.math.log1p( tf.math.abs(inputs*self.alpha))/self.alpha
 
 
+parser = argparse.ArgumentParser(description="Parameters for PMFPredictor")
+parser.add_argument("-i","--ensembleID", type=int,default=0, help="ID number for this ensemble member, set to 0 for development split")
+parser.add_argument("-b","--bootstrap", type=int,default=0,help="If non-zero switches the sampling to bootstrapping")
+parser.add_argument("-s","--splittype",type=int,default=0,help="Zero: use simple splitting based on PMF ID. Non zero: cluster based partitioning into TT-TV-VT-VV sets")
+
+args = parser.parse_args()
+
+filetag = "PMFPredictor-sep09"
+
+if args.splittype==0:
+    filetag = filetag+"-simplesplit"
+else
+    filetag = filetag+"-clustersplit"
+    
+if args.bootstrap != 0:
+    filetag = filetag+"-bootstrapped"
+
+if args.ensembleID>0:
+    filetag = filetag+"-ensemble"+str(args.ensembleID)
+else:
+    filetag = filetag+"-dev"
+basedir = "models"
+workingDir = basedir+"/"+filetag
+
 datasetAll= pd.read_csv("Datasets/TrainingData-r0matched-sep07.csv")
 #datasetAll = datasetAll.head(1000)
 
 #datasetExtra= pd.read_csv("Datasets/TrainingData_PMFn9xCombon2-r0matched-aug02-negativeE0-partial.csv")
 #datasetAll=datasetAll.append(  datasetExtra )
 #datasetAll = pd.read_csv("Datasets/TrainingData_PMFn2xCombon5-r0matched-july27.csv")
-basedir = "models"
+
 
 
 numDeconvResidCorrections =8
 #filetag = "pmfpredict-aug16-mix1-deconv8x8-mix2-c6-pmfclusterfix-resolution-mixing-addwholepotentials-directdecode-extrawater-klonly-loweps"
 #filetag = "pmfpredict-aug21-mix6-deconv-mix6-desatweightspreset-withpost-KLloss-nodesat-allscaled-batchnorms-oldxlogwithshift"
-filetag = "pmfpredict-sep07-mixtrainval-v2-moredropout-normedclusters-localnormxlogpotential-oldclusters"
-workingDir = basedir+"/"+filetag
+
 
 datasetAll['pmfname'] = datasetAll['Material'] + "_" + datasetAll['Chemical']
-parser = argparse.ArgumentParser(description="Parameters for PMFPredictor")
-parser.add_argument("-i","--ensembleID", type=int,default=0, help="ID number for this ensemble member, set to 0 for development split")
-parser.add_argument("-b","--bootstrap", type=int,default=0,help="If non-zero switches the sampling to bootstrapping")
 
-args = parser.parse_args()
-numChemClusters = 20
+numChemClusters = 15
 
 E0TargetVal = 10 #1 kbT = 2.5 kJ mol
-numEpochs = 2000
+
 random.seed(1648113195 + args.ensembleID) #epoch time at development start with the ensembleID used as an offset - this way each member gets a different split, but can be recreated.
 tf.random.set_seed(1648113195 + args.ensembleID)
 np.random.seed(1648113195 + args.ensembleID)
@@ -259,18 +278,6 @@ for pmfToDrop in suspiciousPMFs:
     datasetAll = datasetAll.drop(  datasetAll[   (datasetAll["Material"] == pmfToDrop[0] )   &  (datasetAll["Chemical"] == pmfToDrop[1] )      ].index   )
 
 
-#re-assign the Al PMFs to source=2 because these are different to all the others
-#datasetAll.loc[ datasetAll["Material"] == "AlFCC100UCD" ,   "source" ] = 2
-#datasetAll.loc[ datasetAll["Material"] == "AlFCC110UCD" ,   "source" ] = 2
-
-#and re-assign CdSe, AuSU because these don't have ions
-#datasetAll.loc[ datasetAll["Material"] == "AuFCC100" ,   "source" ] = 3
-#datasetAll.loc[ datasetAll["Material"] == "CdSeWurtzite2-10" ,   "source" ] = 3
-
-
-#datasetAll.loc[ datasetAll["Material"] == "AlFCC111UCD" ,   "source" ] = 2
-#then drop the al for now
-
 
 datasetAll.loc[ datasetAll["Material"] == "AuFCC100UCD" ,   "source" ] = 2
 datasetAll.loc[ datasetAll["Material"] == "AuFCC110UCD" ,   "source" ] = 2
@@ -283,7 +290,6 @@ datasetAll = datasetAll.drop( datasetAll[datasetAll["source"]==3].index )
 if args.bootstrap == 0:
     dataset = datasetAll
 else:
-    filetag = filetag+"-bootstrapped"
     pmfSet  =  datasetAll['pmfname'].unique().tolist()
     selectedPMFs = random.choices( pmfSet, k=len(pmfSet) )
     #dataset = pd.DataFrame()
@@ -295,9 +301,9 @@ else:
     #dataset = datasetAll.sample(frac=1,replace=True,random_state=1+args.ensembleID)
 
 if args.ensembleID>0:
-    filetag = filetag+"-ensemble"+str(args.ensembleID)
     numEpochs = 50
-
+else:
+    numEpochs = 2000
 #build the folders for logging, outputs, metadata
 os.makedirs(basedir, exist_ok=True)
 os.makedirs(workingDir, exist_ok=True)
@@ -362,8 +368,8 @@ varsetOutputFile.close()
 
 inputs = [aaPresetIn]
 
-
-allowMixing = 1
+if args.splittype == 0:
+    allowMixing = 1
 
 if allowMixing == 0:
     #Find the set of materials present in the training set and get their canonical coefficients

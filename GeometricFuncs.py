@@ -6,7 +6,7 @@ def UARotateMatrix(theta,phi):
     Generates the rotation matrix corresponding to rotation around the z axis by phi, followed by rotation around the y axis by theta.
     '''
     return np.array([ [ np.cos(theta) * np.cos(phi) , -1 * np.cos(theta) * np.sin(phi) , np.sin(theta) ],
-      [  np.sin(phi)                 ,   np.cos(phi)                    , 0 ],
+      [  np.sin(phi)                 ,   np.cos(phi)                    , np.zeros_like(phi) ],
       [ -1 * np.sin(theta) * np.cos(phi) ,   np.sin(theta) * np.sin(phi) , np.cos(theta) ]
     ])
 
