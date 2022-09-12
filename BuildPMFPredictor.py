@@ -56,7 +56,7 @@ def activationDesatLog(x):
 
 class TrainableDesat4(keras.layers.Layer):
     def __init__(self, targetMean=0.0,targetScale=1.0):
-        super(TrainableDesat, self).__init__()
+        super(TrainableDesat4, self).__init__()
         self.targetMean = targetMean
         self.targetScale = targetScale
     def get_config(self):
@@ -129,7 +129,7 @@ class TrainableDesat(keras.layers.Layer):
 
 class TrainableXLog4(keras.layers.Layer):
     def __init__(self):
-        super(TrainableXLog, self).__init__()
+        super(TrainableXLog4, self).__init__()
 
     #previous tf.keras.initializers.Constant(2.0)
     def build(self, input_shape):
@@ -205,7 +205,7 @@ filetag = "PMFPredictor-sep09"
 
 if args.splittype==0:
     filetag = filetag+"-simplesplit"
-else
+else:
     filetag = filetag+"-clustersplit"
     
 if args.bootstrap != 0:
@@ -367,7 +367,7 @@ varsetOutputFile.close()
 
 
 inputs = [aaPresetIn]
-
+allowMixing = 0
 if args.splittype == 0:
     allowMixing = 1
 

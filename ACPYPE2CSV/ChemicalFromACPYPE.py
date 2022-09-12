@@ -1,90 +1,26 @@
+#Generation of chemical structure files in CSV format via ACPYPE
 import os
+import argparse
 
+
+parser = argparse.ArgumentParser(description="Parameters for ChemicalFromACPYPE")
+parser.add_argument("-s","--scanstructures", type=int,default=0, help="If non-zero, scans Structures/ChemicalDefinitions for any missing entries and constructs these")
+parser.add_argument("-v","--verbose", type=int,default=0, help="If non-zero, prints debugging messages")
+args = parser.parse_args()
+
+scanStructures = 0
+if args.scanstructures!=0:
+    scanStructures = 1
+#An example of the structure required for targets: a short descriptive name without underscores, the SMILES code, and the total charge.
 targetList = [
-["ETHANE-AC","CC","0"],
-["PROPANE-AC","CCC","0"],
-["ETHENE-AC","C=C","0"],
-["PROPENE-AC","C=CC","0"],
-["BUTENE1-AC","C=CCC","0"],
-["BUTENE2-AC","CC=CC","0"],
-["BUTENE13-AC","C=CC=C","0"],
-["ALASCA-AC","C","0"],
-["ARGSCA-AC","CCCNC(N)=[NH2+]","1"],
-["ASNSCA-AC","CC(N)=O","0"],
-["ASPSCA-AC","CC(=O)[O-]","-1"],
-["CYSSCA-AC","CS","0"],
-["GLNSCA-AC","CCC(N)=O","0"],
-["GLUSCA-AC","CCC(=O)[O-]","-1"],
-["HIDSCA-AC","Cc1cnc[nH]1","0"],
-["HIESCA-AC","Cc1c[nH]cn1","0"],
-["ILESCA-AC","CCCC","0"],
-["LEUSCA-AC","CC(C)C","0"],
-["LYSSCA-AC","CCCC[NH3+]","1"],
-["METSCA-AC","CCSC","0"],
-["PHESCA-AC","Cc1ccccc1","0"],
-["SERSCA-AC","CO","0"],
-["THRSCA-AC","CCO","0"],
-["TRPSCA-AC","Cc1c[nH]c2ccccc12","0"],
-["TYRSCA-AC","Cc1ccc(O)cc1","0"],
-["VALSCA-AC","CCC","0"],
-["HIPSCA-AC","Cc1c[nH]c[nH+]1","1"],
-["CHL-AC","C[N+](C)(C)C","1"],
-["ETA-AC","C[NH3+]","1"],
-["PHO-AC","COP(=O)([O-])OC","-1"],
-["EST-AC","COC(C)=O","0"],
-["DGL-AC","OCC1OC(O)C(O)C(O)C1O","0"],
-["PROSCA-AC","C1CC1","0"],
-["CYMSCA-AC","C[S-]","-1"],
-["DMEP-AC","COP(=O)([O-])OC","-1"],
-["NC4-AC","C[N+](C)(C)C","1"],
-["MAS-AC","COC(C)=O","0"],
-["HSPSCA-AC","Cc1c[nH]c[nH+]1","1"],
-["MAMM-AC","C[NH3+]","1"],
-["GLY-AC","NCC(=O)O","0"],
-["PRO-AC","O=C(O)C1CCCN1","0"],
-["GANSCA-AC","CCC(=O)O","0"],
-["GLUPSCA-AC","CCC(=O)O","0"],
-["ASPPSCA-AC","CC(=O)O","0"],
-["AFUC-AC","CC1OC(O)C(O)C(O)C1O","0"],
-["BGLCNA-AC","CC(=O)NC1C(O)OC(CO)C(O)C1O","0"],
-["AMAN-AC","OCC1OC(O)C(O)C(O)C1O","0"],
-["BGLC-AC","OCC1OC(O)C(O)C(O)C1O","0"],
-["CAFF-AC", "Cn1cnc2n(C)c(=O)n(C)c(=O)c12","0"]
-
-
-
-
-
-
-
-
-
-
-
-
-
+["ETHANE-AC","CC","0"]
 ]
-#CS-3-AC,CC(CN)O,0,1-amino-2-propanol,
-#CS-173-AC,CC(=N)O,0,Acetamide,
-#CS-210-AC,CC(=O)CN,0,Aminoacetone,
 
-targetFile = open("csexport.csv","r")
-for line in targetFile:
-    lineTerms = line.strip().split(",")
-    chemID = lineTerms[0]
-    smiles = lineTerms[1]
-    netcharge = lineTerms[2]
-    #targetList.append( [chemID,smiles,netcharge])
-
-print(targetList)
-
-
-
-for target in targetList:
-    os.system("acpype -i '"+target[1]+"' -b "+target[0]+" -n "+target[2])
-    gmxITP = open(target[0]+".acpype/"+target[0]+"_GMX.itp", "r")
-    gmxGRO = open(target[0]+".acpype/"+target[0]+"_GMX.gro","r")
-    outputfile = open( "../Structures/Chemicals/"+target[0]+"_combined.csv","w")
+def GenerateChemStructure( chemName, chemSmiles, chemCharge):
+    os.system("acpype -i '"+chemSmiles+"' -b "+chemName+" -n "+chemCharge)
+    gmxITP = open(chemName+".acpype/"+chemName+"_GMX.itp", "r")
+    gmxGRO = open(chemName+".acpype/"+chemName+"_GMX.gro","r")
+    outputfile = open( "../Structures/Chemicals/"+chemName+"_combined.csv","w")
     lastITP = ""
     while lastITP != "[ atomtypes ]":
         lastITP = gmxITP.readline().strip()
@@ -120,3 +56,20 @@ for target in targetList:
     gmxGRO.close()
     gmxITP.close()
     outputfile.close()
+
+#Append targets found in the ChemicalDefinitions if asked
+if scanStructures == 1:
+    chemDefFile = open("../Structures/ChemicalDefinitions.csv","r")
+    for line in chemDefFile:
+        if line[0]=="#":
+            continue
+        lineTerms = line.strip().split(",")
+        if os.path.exists("../Structures/Chemicals/"+lineTerms[0]+"_combined.csv"):
+            continue
+        else:
+            smilesCode = lineTerms[1].replace("<COMMA>",",").replace("<HASH>","#")
+            print("Generating structure for", lineTerms[0] , smilesCode, lineTerms[2])
+            targetList.append([lineTerms[0], smilesCode, lineTerms[2]]  )
+
+for target in targetList:
+    GenerateChemStructure( target[0], target[1], target[2])
