@@ -49,9 +49,8 @@ Workflow for generating PMFs for new surfaces
 ===========
 1) Generate a set of combined coordinate files for all the atoms in the structure, place in Structures/Surfaces. This requires co-ordinates, masses, charges, and LJ 6-12 coefficients for each atom present.
 	- Suggested method: use CHARMMGUI with GROMACS output enabled and apply NPtoCSV.py by editing the list of targets to the folder downloaded from CHARMMGUI.
-2) Update Structures/SurfaceDefinitions.csv to register your new surface. Generally, you can use the default settings which look like "CNT15,cylinder,35,0,35,0", just replacing the name and shape as needed.
-	- If you are trying to compare these to pre-existing PMFs then you might need to edit the last two numbers to manual alignment mode at a target energy. The final number is set to 1 in this case. The penultimate number is the point in the PMF used for alignment and should be as close to 35 as possible for consistency - this value usually works to find the pure repulsive region, even when the PMFs have been back-filled.
-3) Run GenerateSurfacePotentials.py to build the free-energy probe and water tables describing all materials listed in the SurfaceDefinitions.csv table. This may take up to half an hour for each, possibly longer depending on the size of your surface. This will also update the material_offsets file used to help align pre-existing PMFs.
+2) Update Structures/SurfaceDefinitions.csv to register your new surface, using the other materials as templates to choose appropriate definitions for the SSD type and source if these are for use in building a training set.
+3) Run GenerateSurfacePotentials.py to build the free-energy probe and water tables describing all materials listed in the SurfaceDefinitions.csv table. This may take a significant amount of time - up to a few hours for a typical 30 x 30 x 15 slab
 4) Run HGExpandSurfacePotential.py to generate the expansion coefficients describing the materials.
 
 The input structures should not contain unbound water, but if this is known to be irreversibly bound to the surface it can be included.
@@ -59,9 +58,10 @@ The input structures should not contain unbound water, but if this is known to b
 ===========
 Workflow for generating PMFs for new chemicals
 ===========
-1)  Generate a set of combined coordinate files for all the atoms in the structure, place in Structures/Chemicals. This requires co-ordinates, masses, charges, and LJ 6-12 coefficients for each atom present.
+1) Update Structures/ChemicalDefinitions.csv to register your new chemical. This has the format ID,SMILES,formal charge,comment. The comment cannot include commas (because its a csv file) or hash-marks (#) but otherwise can contain arbitrary text, e.g. force field and method used to generate the structure, a descriptive name, etc. If a comma is needed use "<COMMA>" and for # use "<HASH>" in e.g. SMILES strings.
+2)  Generate a set of combined coordinate files for all the atoms in the structure, place in Structures/Chemicals. This requires co-ordinates, masses, charges, and LJ 6-12 coefficients for each atom present.
 	- Suggested method: use ChemicalFromACPYPE.py script if you have ACPYPE installed. This scans over a list of target SMILES codes and IDs to build the structure and put it into the correct format. If your molecule has chirality thats 		not specified by the SMILES code you should be careful to make sure it's been correctly generated. I would recommend appending "-AC" to the ID target to make it clear it was made by ACPYPE, but this is not mandatory.
-2) Update Structures/ChemicalDefinitions.csv to register your new chemical. This has the format ID,SMILES,formal charge,comment. The comment cannot include commas (because its a csv file) but otherwise can contain arbitrary text, e.g. force 	field and method used to generate the structure, a descriptive name, etc.
+	- "python3 ChemicalFromACPYPE.py -s 1" scans ChemicalDefinitions.csv for any chemicals without structures files and builds these using ACPYPE. 
 3) Run GenerateChemicalPotentials.py
 4) Run HGExpandChemicalPotential.py to generate the table of expansion coefficients
 
