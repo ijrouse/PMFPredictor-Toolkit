@@ -13,3 +13,6 @@ SurfacePotentials/oldpotentials
 ChemicalPotentials/oldpotentials
 ChemicalPotentialsOld
 models
+Datasets/ChemicalHGE
+Datasets/SurfaceHGE
+predicted_epoch_pmfs
