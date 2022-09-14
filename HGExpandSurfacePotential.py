@@ -37,8 +37,8 @@ r0ValRange =  np.arange( minR0, maxR0, 0.01)
 noiseReplicas = 1
 potentialFolder = "SurfacePotentials/"
 
-outfile=open("Datasets/SurfacePotentialCoefficients-sep07.csv","w")
-noiseoutfile=open("Datasets/SurfacePotentialCoefficientsNoise-"+str(noiseReplicas)+"-sep07.csv","w")
+outfile=open("Datasets/SurfacePotentialCoefficients-sep14.csv","w")
+noiseoutfile=open("Datasets/SurfacePotentialCoefficientsNoise-"+str(noiseReplicas)+"-sep14.csv","w")
 ljHGELabels = []
 electroHGELabels = []
 waterHGELabels = []

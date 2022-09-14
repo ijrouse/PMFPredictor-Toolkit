@@ -16,3 +16,6 @@ models
 Datasets/ChemicalHGE
 Datasets/SurfaceHGE
 predicted_epoch_pmfs
+Datasets/OldDatasets
+__pycache__
+predicted_avg_pmfs

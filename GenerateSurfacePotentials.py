@@ -43,7 +43,6 @@ moleculeProbes = [
 ["methane",PotentialProbes.methaneProbe], 
 ["waterUCD", PotentialProbes.waterUCDProbe],
 ["carbring", PotentialProbes.sixcarbProbe],
-["cline", PotentialProbes.clineProbe],
 ["cline3",PotentialProbes.cline3Probe]
 ]
 
@@ -242,7 +241,7 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
     for moleculeProbeDef in moleculeProbes:
         moleculeTag = moleculeProbeDef[0]
         moleculeStructure = PotentialProbes.centerProbe(moleculeProbeDef[1])
-        outputLoc = outputFolder+"/" +     surfaceName+"_"+moleculeTag+"fe_multi.dat"
+        outputLoc = outputFolder+"/" +     surfaceName+"_"+moleculeTag+"fe.dat"
         if args.forcerecalc == 0 and os.path.exists(outputLoc):
             continue
         else:

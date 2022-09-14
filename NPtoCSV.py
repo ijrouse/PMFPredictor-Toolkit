@@ -13,7 +13,14 @@ targetList = [
 ["Au-001-PEG","../Downloads/CharmmGUINPs/Au-001-PEG/charmm-gui-6238233452"],
 ["Al2O3-001","../Downloads/CharmmGUINPs/Al2O3-001/charmm-gui-6238142642"],
 ["Cr2O3-001","../Downloads/CharmmGUINPs/Cr2O3001/charmm-gui-5659838040"],
-["Ce-001","../Downloads/CharmmGUINPs/Ce001/charmm-gui-5659812945"]
+["Ce-001","../Downloads/CharmmGUINPs/Ce001/charmm-gui-5659812945"],
+["Hydroxyapatite-001"    ,   "../Downloads/CharmmGUINPs/Hydroxyapatite-001/charmm-gui-6306913381"]     ,
+["Fe001","../Downloads/CharmmGUINPs/Iron-001/charmm-gui-6306819483"],
+["Fe110", "../Downloads/CharmmGUINPs/Iron-110/charmm-gui-6306837287"],
+["Fe111","../Downloads/CharmmGUINPs/Iron-111/charmm-gui-6306849347"],
+["Cu001","../Downloads/CharmmGUINPs/Cu-100/charmm-gui-6306869904"],
+["Cu110","../Downloads/CharmmGUINPs/Cu-110/charmm-gui-6306887761"],
+["Cu111","../Downloads/CharmmGUINPs/Cu-111/charmm-gui-6306898000"]
 ]
 
 print("Generating structures for target CHARMM-GUI downloads")
