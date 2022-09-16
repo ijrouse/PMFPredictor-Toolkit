@@ -16,16 +16,6 @@ parser = argparse.ArgumentParser(description="Parameters for HGExpandSurfacePote
 parser.add_argument("-f","--forcerecalc", type=int,default=0,help="If 1 then potential HGE coeffs are recalculated even if their table already exists")
 args = parser.parse_args()
 
-
-
-
-
-    
-
-    
-
-
-
 #    freeEnergySet[:,0] = freeEnergySet[:,0] + np.random.normal( 0, 0.01)
 #    freeEnergySet[:,1] = freeEnergySet[:,1] * np.random.normal( 1, 0.1) + np.random.normal( 0, 0.2, len(freeEnergySet))
 
@@ -43,8 +33,8 @@ r0ValAll = 0.25
 
 potentialFolder = "ChemicalPotentials/"
 
-outfile=open("Datasets/ChemicalPotentialCoefficients-aug26.csv","w")
-noiseoutfile=open("Datasets/ChemicalPotentialCoefficientsNoise"+str(noiseReplicas)+"-aug26.csv","w")
+outfile=open("Datasets/ChemicalPotentialCoefficients-sep15.csv","w")
+noiseoutfile=open("Datasets/ChemicalPotentialCoefficientsNoise"+str(noiseReplicas)+"-sep15.csv","w")
 
 #energyTargetSet = [ 10,15,20,25, 30, 35,40]
 energyTargetSet = [25]
@@ -97,9 +87,9 @@ for material in materialSet:
     print("Starting chemical ", materialID)
     #load chem-probe potential and HGE
     try:
-        freeEnergies0 = np.genfromtxt( potentialFolder+materialID+"_fev5.dat",delimiter=",")
+        freeEnergies0 = np.genfromtxt( potentialFolder+materialID+"_fev6.dat",delimiter=",")
         freeEnergies = freeEnergies0.copy()
-        freeEnergiesNames = np.genfromtxt( potentialFolder+materialID+"_fev5.dat",delimiter=",",names=True)
+        freeEnergiesNames = np.genfromtxt( potentialFolder+materialID+"_fev6.dat",delimiter=",",names=True)
         freeEnergyHeader = list(freeEnergiesNames.dtype.names)
         print(freeEnergyHeader)
     except:
@@ -108,7 +98,7 @@ for material in materialSet:
         continue
     for molProbe in moleculeProbes:
         try:
-            moleculeFreeEnergies0 = np.genfromtxt( potentialFolder+materialID+"_"+molProbe[1]+".dat",delimiter=",")
+            moleculeFreeEnergies0 = np.genfromtxt( potentialFolder+materialID+"_"+molProbe[1]+"v6.dat",delimiter=",")
             moleculePotentials[ molProbe[0] ] = moleculeFreeEnergies0
         except:
             print("Could not find ", molProbe[0], "for", materialID)
@@ -145,6 +135,8 @@ for material in materialSet:
                 else:
                     probeHeader = "U"+probe+"dkJmol"
                     probeNumber = freeEnergyHeader.index(probeHeader)
+                    #print(r0Val, probeNumber)
+                    #print(freeEnergies[:5,(2,probeNumber) ])
                     probeFreeEnergies  = HGEFuncs.getValidRegion( freeEnergies[:,(2,probeNumber)])
                 if itNum > 0:
                     probeFreeEnergies = HGEFuncs.applyNoise(probeFreeEnergies,0.01,0.1,0.2)

@@ -3,6 +3,7 @@
 #Ian Rouse, ian.rouse@ucd.ie , 24/05/2022
 
 
+
 import numpy as np
 import matplotlib.pyplot as plt
 import os
@@ -14,7 +15,7 @@ import HGEFuncs
 import GeometricFuncs
 import PotentialProbes
 
-parser = argparse.ArgumentParser(description="Parameters for GenerateChemicalPotentials")
+parser = argparse.ArgumentParser(description="Parameters for GenerateSurfacePotentials")
 parser.add_argument("-f","--forcerecalc", type=int,default=0,help="If 1 then potentials are recalculated even if their table already exists")
 parser.add_argument("-i","--initial", type=int, default=0,help="Initial structure to start calculating for multiprocessing")
 parser.add_argument("-s","--step", type=int, default=1,help="Stride for slicing for multiprocessing")
@@ -112,11 +113,12 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
     if alignSurface == 1:
         #indexes: 0,1,2 = x,y,z, 3=charge, 4=mass, 5=sigma, 6=epsilon
         #print(atomNumericData)
-        #planes: zero-center the COM, then level the uppermost atom  to the z=0 plane, excluding small atoms and water . This offset gets updated later.
+        #planes: zero-center the COM, then level the uppermost atom  to the z=0 plane, excluding small atoms  . This offset gets updated later.
         #cylinders: these are already aligned around z=0, so just set the centre of mass to the z=0 plane
         atomNumericData[:,2] = atomNumericData[:,2] - np.sum(atomNumericData[:,2] * atomNumericData[:,4])/np.sum(atomNumericData[:,4])
         #zeroLevelOffset = np.amax(atomNumericData[   atomNumericData[:,6] > 0.1 ][:,2]  )   
-        zeroLevelAtoms = np.logical_and(   np.logical_and( atomNumericData[:,6] > 0.05 , nmData[:,2] != "OHW"   ) , nmData[:,2] != "OFW")
+        #zeroLevelAtoms = np.logical_and(   np.logical_and( atomNumericData[:,6] > 0.05 , nmData[:,2] != "OHW"   ) , nmData[:,2] != "OFW")
+        zeroLevelAtoms = atomNumericData[:,6] > 0.01
         zeroLevelOriginalOffset = np.amax(atomNumericData[  atomNumericData[:,6] > 0.05  ][:,2]  )
         zeroLevelOffset = np.amax(atomNumericData[  zeroLevelAtoms ][:,2]  ) 
 
@@ -131,9 +133,9 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
         newZCOM = np.sum(atomNumericData[:,2] * atomNumericData[:,4])/np.sum(atomNumericData[:,4])
         if ssdDefType == 0: #defined relative to upper surface
             ssdRefDist = 0
-        if ssdDefType == 1: #defined relative to upper surface 
-            ssdRefDist = 0        
-        if ssdDefType == 2:  #SSD is given by the distance from a point to the COM of the slab , then subtrac slabWidth/2. 
+        if ssdDefType == 1: #defined relative to upper surface but use the COM-top distance to see if this is descriptive
+            ssdRefDist = zUpperSurface  - newZCOM - slabWidth/2.0       
+        if ssdDefType == 2:  #SSD is given by the distance from a point to the COM of the slab , then subtract slabWidth/2. 
             print( surfaceName, zUpperSurface, newZCOM, slabWidth/2.0)
             ssdRefDist = zUpperSurface  - newZCOM - slabWidth/2.0  
         if ssdDefType == 3:
@@ -157,7 +159,7 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
     lastWaterInfPoint = lastInfPoint
         
     skipPointProbe = 0
-    outputTarget = outputFolder+"/" + surfaceName+"_fev6.dat"
+    outputTarget = outputFolder+"/" + surfaceName+"_fev5.dat"
     if os.path.exists( outputTarget) and args.forcerecalc == 0:
         skipPointProbe = 1
         print(surfaceName+": Skipping point probe")
@@ -218,68 +220,70 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
         moleculeTag = moleculeProbeDef[0]
         moleculeStructure = moleculeProbeDef[1].getAtomSet()
         #moleculeStructure = PotentialProbes.centerProbe(moleculeProbeDef[1])
-        outputLoc = outputFolder+"/" +     surfaceName+"_"+moleculeTag+"fev6.dat"
+        outputLoc = outputFolder+"/" +     surfaceName+"_"+moleculeTag+"fe.dat"
+        skipMolCalc = 0
         if args.forcerecalc == 0 and os.path.exists(outputLoc):
-            continue
+            skipMolCalc = 1
+            waterResArray = np.genfromtxt(outputLoc,delimiter=",")
         else:
             print("Starting", moleculeTag)
-        rRangeWater =r0Start + np.arange(r0Start - requiredOffsetFE, 1.6,  0.01 ) #usual resolution 0.01   , starting point:  r-r0Start   + requiredOffsetFE = 0 -> r = r0Start - requiredOffsetFE
-        #rRangeWater = np.arange(0.1,0.3,0.005) 
-        waterResList = []   
-        thetaDelta = 30
-        phiNum = 8
-        thetaRange = np.arange( thetaDelta, 180 , thetaDelta)*np.pi/180.0       
-        phiRange = np.linspace(0,2*np.pi, num =phiNum, endpoint=False)
-   
-         
-        for r in rRangeWater:      
-            waterMin = 1e50      
-            runningNumerator = 0
-            runningDenominator = 0
-            minEnergy = 1e20
-            minData = [0,0,0] #phi,theta
-            for theta in thetaRange: #thetaRange  [0]: #np.linspace(0,np.pi, num = 5, endpoint=True) : #usual 5 values
-                for phi in phiRange: #phiRange  #usual 8 values
-                    rotateMatrixInternal = GeometricFuncs.UARotateMatrix(np.pi - theta,-phi)
-                    allContributions = 0
-                    minz = 20
-                    for atom in moleculeStructure:
-                        ax = atom.x * rotateMatrixInternal[0,0] + atom.y*rotateMatrixInternal[0,1] + atom.z*rotateMatrixInternal[0,2]
-                        ay = atom.x * rotateMatrixInternal[1,0] + atom.y*rotateMatrixInternal[1,1] + atom.z*rotateMatrixInternal[1,2]
-                        az = atom.x * rotateMatrixInternal[2,0] + atom.y*rotateMatrixInternal[2,1] + atom.z*rotateMatrixInternal[2,2]
+            rRangeWater =r0Start + np.arange(r0Start - requiredOffsetFE, 1.6,  0.01 ) #usual resolution 0.01   , starting point:  r-r0Start   + requiredOffsetFE = 0 -> r = r0Start - requiredOffsetFE
+            #rRangeWater = np.arange(0.1,0.3,0.005) 
+            waterResList = []   
+            thetaDelta = 30
+            phiNum = 8
+            thetaRange = np.arange( thetaDelta, 180 , thetaDelta)*np.pi/180.0       
+            phiRange = np.linspace(0,2*np.pi, num =phiNum, endpoint=False)
+    
+            
+            for r in rRangeWater:      
+                waterMin = 1e50      
+                runningNumerator = 0
+                runningDenominator = 0
+                minEnergy = 1e20
+                minData = [0,0,0] #phi,theta
+                for theta in thetaRange: #thetaRange  [0]: #np.linspace(0,np.pi, num = 5, endpoint=True) : #usual 5 values
+                    for phi in phiRange: #phiRange  #usual 8 values
+                        rotateMatrixInternal = GeometricFuncs.UARotateMatrix(np.pi - theta,-phi)
+                        allContributions = 0
+                        minz = 20
+                        for atom in moleculeStructure:
+                            ax = atom.x * rotateMatrixInternal[0,0] + atom.y*rotateMatrixInternal[0,1] + atom.z*rotateMatrixInternal[0,2]
+                            ay = atom.x * rotateMatrixInternal[1,0] + atom.y*rotateMatrixInternal[1,1] + atom.z*rotateMatrixInternal[1,2]
+                            az = atom.x * rotateMatrixInternal[2,0] + atom.y*rotateMatrixInternal[2,1] + atom.z*rotateMatrixInternal[2,2]
 
-                        if surfaceType == "cylinder":
-                            distArray = np.sqrt( ( r* np.cos(c1grid) + ax - atomNumericData[atomIndexGrid,0] )**2 + ( r* np.sin(c1grid) + ay - atomNumericData[atomIndexGrid,1] )**2  + ( c2grid + az -atomNumericData[atomIndexGrid,2] )**2 )
-                        else:
-                            distArray = np.sqrt(   ( c1grid + ax - atomNumericData[atomIndexGrid,0])**2 + (c2grid + ay - atomNumericData[atomIndexGrid,1])**2 + (r + az - atomNumericData[atomIndexGrid,2])**2  )
+                            if surfaceType == "cylinder":
+                                distArray = np.sqrt( ( r* np.cos(c1grid) + ax - atomNumericData[atomIndexGrid,0] )**2 + ( r* np.sin(c1grid) + ay - atomNumericData[atomIndexGrid,1] )**2  + ( c2grid + az -atomNumericData[atomIndexGrid,2] )**2 )
+                            else:
+                                distArray = np.sqrt(   ( c1grid + ax - atomNumericData[atomIndexGrid,0])**2 + (c2grid + ay - atomNumericData[atomIndexGrid,1])**2 + (r + az - atomNumericData[atomIndexGrid,2])**2  )
 
-                        #print( np.amin(distArray)   ) 
-                        #electricContributions = np.sum( chargeBroadcast  / distArray , axis=2 )
-                        #scaledDists = sigmaCombined/distArray 
-                        #ljContributions =  np.sum( 4*epsCombined*( scaledDists**12 - scaledDists**6) , axis=2)
-                        #probeDef[1] = sigma, probeDef[2] = epsilon, probDef[3] = charge
-                        #probeDef = PotentialProbes.AtomProbe("molcomponent",atom[5],atom[6],atom[3])
-                        totalPotential,probeFreeEnergy,probeSimpleEnergy = PotentialProbes.getProbeEnergy( chargeBroadcast, epsBroadcast,sigmaBroadcast, distArray, atom,conversionFactor,pointWeights)
-                        allContributions += totalPotential
-                    waterMin = min( waterMin, np.amin(allContributions)) #this is used only if there's no better value under the assumption its either the least bad or most favourable
-                    runningNumerator += np.sum(  np.exp(-allContributions/conversionFactor)     * np.sin(theta) )
-                    runningDenominator += np.sum(    np.ones_like(allContributions) *np.sin(theta))
+                            #print( np.amin(distArray)   ) 
+                            #electricContributions = np.sum( chargeBroadcast  / distArray , axis=2 )
+                            #scaledDists = sigmaCombined/distArray 
+                            #ljContributions =  np.sum( 4*epsCombined*( scaledDists**12 - scaledDists**6) , axis=2)
+                            #probeDef[1] = sigma, probeDef[2] = epsilon, probDef[3] = charge
+                            #probeDef = PotentialProbes.AtomProbe("molcomponent",atom[5],atom[6],atom[3])
+                            totalPotential,probeFreeEnergy,probeSimpleEnergy = PotentialProbes.getProbeEnergy( chargeBroadcast, epsBroadcast,sigmaBroadcast, distArray, atom,conversionFactor,pointWeights)
+                            allContributions += totalPotential
+                        waterMin = min( waterMin, np.amin(allContributions)) #this is used only if there's no better value under the assumption its either the least bad or most favourable
+                        runningNumerator += np.sum(  np.exp(-allContributions/conversionFactor)     * np.sin(theta) )
+                        runningDenominator += np.sum(    np.ones_like(allContributions) *np.sin(theta))
 
-                    
-            waterFreeEnergy=-conversionFactor * np.log( runningNumerator/runningDenominator)
-            if not np.isfinite(waterFreeEnergy):
-                #print("Overriding free energy with minimum")
-                waterFreeEnergy = waterMin
-            if np.isfinite(waterFreeEnergy):
-                #print(r-r0Start,waterFreeEnergy)
-                waterResList.append( [r,r-r0Start, r-r0Start, waterFreeEnergy])  
-                #print( r,waterFreeEnergy)          
-            else:
-                lastWaterInfPoint = r    
+                        
+                waterFreeEnergy=-conversionFactor * np.log( runningNumerator/runningDenominator)
+                if not np.isfinite(waterFreeEnergy):
+                    #print("Overriding free energy with minimum")
+                    waterFreeEnergy = waterMin
+                if np.isfinite(waterFreeEnergy):
+                    #print(r-r0Start,waterFreeEnergy)
+                    waterResList.append( [r,r-r0Start, r-r0Start, waterFreeEnergy])  
+                    #print( r,waterFreeEnergy)          
+                else:
+                    lastWaterInfPoint = r    
 
-        waterResArray = np.array(waterResList)
-        waterResArray = waterResArray[ waterResArray[:,0] > lastWaterInfPoint ]
-        waterResArray[:,2] = waterResArray[:,2] + requiredOffsetFE
+            waterResArray = np.array(waterResList)
+            waterResArray = waterResArray[ waterResArray[:,0] > lastWaterInfPoint ]
+        waterResArray[:,2] = waterResArray[:,1] + requiredOffsetFE
         np.savetxt(outputLoc, waterResArray, fmt='%2.7f',delimiter=",", header="r[nm],d[nm],daligned[nm],U"+moleculeTag+"(d)[kj/mol]")    
 
 offsetResultFile.close()

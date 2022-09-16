@@ -201,7 +201,7 @@ parser.add_argument("-s","--splittype",type=int,default=0,help="Zero: use simple
 
 args = parser.parse_args()
 
-filetag = "PMFPredictor-sep09"
+filetag = "PMFPredictor-sep15"
 
 if args.splittype==0:
     filetag = filetag+"-simplesplit"
@@ -218,7 +218,7 @@ else:
 basedir = "models"
 workingDir = basedir+"/"+filetag
 
-datasetAll= pd.read_csv("Datasets/TrainingData-r0matched-sep07.csv")
+datasetAll= pd.read_csv("Datasets/TrainingData-r0matched-sep15.csv")
 #datasetAll = datasetAll.head(1000)
 
 #datasetExtra= pd.read_csv("Datasets/TrainingData_PMFn9xCombon2-r0matched-aug02-negativeE0-partial.csv")
@@ -238,9 +238,9 @@ numChemClusters = 15
 
 E0TargetVal = 10 #1 kbT = 2.5 kJ mol
 
-random.seed(1648113195 + args.ensembleID) #epoch time at development start with the ensembleID used as an offset - this way each member gets a different split, but can be recreated.
-tf.random.set_seed(1648113195 + args.ensembleID)
-np.random.seed(1648113195 + args.ensembleID)
+random.seed(1648113195 + args.ensembleID + args.bootstrap) #epoch time at development start with the ensembleID used as an offset - this way each member gets a different split, but can be recreated.
+tf.random.set_seed(1648113195 + args.ensembleID + args.bootstrap)
+np.random.seed(1648113195 + args.ensembleID + args.bootstrap)
 #filter out inputs which are likely to cause problems during fitting
 maxE0 = 500
 absErrorThreshold = 10
@@ -260,12 +260,6 @@ thirdReduction = len(datasetAll)
 print("Initial: ", initialSamples, " absolute filter: ", firstReduction, "relative filter", secondReduction, "E0 max", thirdReduction)
 
 
-#remove the Al PMFs 
-#datasetAll = datasetAll.drop(  datasetAll[   datasetAll["Material"] == "AlFCC100UCD"       ].index   )
-#datasetAll = datasetAll.drop(  datasetAll[   datasetAll["Material"] == "AlFCC110UCD"       ].index   )
-datasetAll = datasetAll.drop(  datasetAll[   datasetAll["Material"] == "AlFCC111UCD"       ].index   )
-
-
 suspiciousPMFs= [
  ["AuFCC100UCD","TRPSCA-JS"],
  ["AuFCC100UCD","PHESCA-JS"],
@@ -279,9 +273,6 @@ for pmfToDrop in suspiciousPMFs:
 
 
 
-datasetAll.loc[ datasetAll["Material"] == "AuFCC100UCD" ,   "source" ] = 2
-datasetAll.loc[ datasetAll["Material"] == "AuFCC110UCD" ,   "source" ] = 2
-datasetAll.loc[ datasetAll["Material"] == "AuFCC111UCD" ,   "source" ] = 2
 datasetAll = datasetAll.drop( datasetAll[datasetAll["source"]==3].index )
 
 
@@ -375,7 +366,7 @@ if allowMixing == 0:
     #Find the set of materials present in the training set and get their canonical coefficients
     uniqueMaterials = dataset['Material'].unique().tolist()
     #print(dataset)
-    canonicalMaterialSet =   pd.read_csv("Datasets/SurfacePotentialCoefficients-sep07.csv")
+    canonicalMaterialSet =   pd.read_csv("Datasets/SurfacePotentialCoefficients-sep15.csv")
     canonicalMaterialSet["R0Dist"] = np.sqrt( (canonicalMaterialSet["SurfCProbeR0"] - 0.2 )**2 ) 
     canonicalMaterialSet.sort_values( by=["R0Dist"] ,ascending=True, inplace=True)
     canonicalMaterialSet.drop_duplicates( subset=['SurfID'] , inplace=True,keep='first')
@@ -386,7 +377,7 @@ if allowMixing == 0:
     #this is so that a) we get the really strongly-binding Stockholm-style gold and b) to provide a baseline for conversion between the two
     #we also add the results of cluster analysis based on the generated potentials
     clusterpotentialModels = surfacePotentialModels
-    chosenClusterCoeffs = ["SurfAlignDist","numericShape"] #  ,"SSDRefDist"]
+    chosenClusterCoeffs = ["SurfAlignDist","numericShape","SSDRefDist","ssdType"] #  ,"SSDRefDist"]
     for potModel in clusterpotentialModels:
         for coeffNum in range(1,9):
             chosenClusterCoeffs.append(potModel+"C"+str(coeffNum))
@@ -399,7 +390,7 @@ if allowMixing == 0:
     fixedMaterials = ["AuFCC100", "AuFCC100UCD"]
     
     
-    clustersOutputFile=open(workingDir+"/outputvarset.txt","w")
+    clustersOutputFile=open(workingDir+"/clusterout.txt","w")
     #clustersOutputFile.write( ",".join(outputVarset))
 
     clustersOutputFile.write("Material clusters")
@@ -413,7 +404,7 @@ if allowMixing == 0:
     
     fixedSMILES = ["C","Cc1c[nH]c2ccccc12"]
     uniqueChemicals = dataset['Chemical'].unique().tolist()
-    canonicalChemicalSet = pd.read_csv("Datasets/ChemicalPotentialCoefficients-aug26.csv")
+    canonicalChemicalSet = pd.read_csv("Datasets/ChemicalPotentialCoefficients-sep15.csv")
 
     canonicalChemicalSet["R0Dist"] = np.sqrt( (canonicalChemicalSet["ChemCProbeR0"] - 0.2 )**2 ) 
     canonicalChemicalSet.sort_values( by=["R0Dist"] ,ascending=True, inplace=True)
@@ -462,6 +453,10 @@ if allowMixing == 0:
     print("Validation AA: ", validationAA)
     print("Training Materials: ", trainingMaterials)
     print("Validation Materials: ", validationMaterials)
+    clustersOutputFile.write("Training Chems \n" + ",".join(trainingAA) + "\n")
+    clustersOutputFile.write("Validation Chems \n" + ",".join(validationAA) + "\n")
+    clustersOutputFile.write("Training Surfss \n" + ",".join(trainingMaterials) + "\n")
+    clustersOutputFile.write("Validation Surfs \n" + ",".join(validationMaterials) + "\n")
     dataset['ChemValidation'] = 0
     dataset.loc[  dataset['Chemical'].isin(validationAA)  ,'ChemValidation'] = 1
     dataset['MaterialValidation'] = 0

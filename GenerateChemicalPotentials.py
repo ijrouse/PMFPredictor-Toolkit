@@ -15,6 +15,9 @@ import PotentialProbes
 
 parser = argparse.ArgumentParser(description="Parameters for GenerateChemicalPotentials")
 parser.add_argument("-f","--forcerecalc", type=int,default=0,help="If 1 then potentials are recalculated even if their table already exists")
+parser.add_argument("-i","--initial", type=int, default=0,help="Initial structure to start calculating for multiprocessing")
+parser.add_argument("-s","--step", type=int, default=1,help="Stride for slicing for multiprocessing")
+
 args = parser.parse_args()
 
 if args.forcerecalc == 1:
@@ -72,7 +75,7 @@ if targetSet.ndim == 1:
 
 surfaceType = "sphere"
 r0Start = 0
-for target in targetSet:
+for target in targetSet[args.initial::args.step]:
     foundPMF = 0
     targetName = target[0]
 

@@ -37,8 +37,8 @@ r0ValRange =  np.arange( minR0, maxR0, 0.01)
 noiseReplicas = 1
 potentialFolder = "SurfacePotentials/"
 
-outfile=open("Datasets/SurfacePotentialCoefficients-sep14.csv","w")
-noiseoutfile=open("Datasets/SurfacePotentialCoefficientsNoise-"+str(noiseReplicas)+"-sep14.csv","w")
+outfile=open("Datasets/SurfacePotentialCoefficients-sep15.csv","w")
+noiseoutfile=open("Datasets/SurfacePotentialCoefficientsNoise-"+str(noiseReplicas)+"-sep15.csv","w")
 ljHGELabels = []
 electroHGELabels = []
 waterHGELabels = []
@@ -168,7 +168,8 @@ for material in materialSet:
                     else:
                         probeHeader = "U"+probe+"dkJmol"
                         probeNumber = freeEnergyHeader.index(probeHeader)
-                        #print(probe,probeNumber,freeEnergies[:,(2,probeNumber)])
+                        #print(r0Val,probe,probeNumber,freeEnergies[:5,(2,probeNumber)])
+                        freeEnergies[:, probeNumber] = freeEnergies[:,probeNumber] - freeEnergies[-1,probeNumber]
                         probeFreeEnergies  = HGEFuncs.getValidRegion( freeEnergies[:,(2,probeNumber)])
                         #print(probeFreeEnergies)
                     if itNum > 0:

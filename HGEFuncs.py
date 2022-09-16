@@ -11,6 +11,7 @@ def HGEFunc(r, r0, n):
 def HGECoeffs( inputPotential, r0Val, nmax):
     '''Generates the HGE expansion for an input potential of shape [ [r,U(r) ] ] up to order nmax using parameter r0'''
     r0Actual = max(np.amin(inputPotential[:,0]), r0Val)
+    inputPotential = inputPotential[ inputPotential[:,0] >= r0Actual ]
     hgeCoeffRes = [r0Actual]
     for n in range(1,nmax+1):
         hgeCoeff =  scipy.integrate.simpson( inputPotential[:,1]*HGEFunc( inputPotential[:,0] ,r0Actual, n),  inputPotential[:,0] )
@@ -37,8 +38,8 @@ def BuildHGEFromCoeffs(r , coeffSet):
     return funcVal
 
 
-def getValidRegion(potential,rmin=0.05):
-    MaskStart =  np.where(  np.logical_and(  potential[:,0] >= rmin  ,np.logical_and(np.logical_and(    np.isfinite( potential[:,1] )     , potential[:,1] > -1000)  , potential[:,1] < 1000     ) ))[0][0]
+def getValidRegion(potential,rmin=0.05, maxEnergy = 1e20):
+    MaskStart =  np.where(  np.logical_and(  potential[:,0] >= rmin  ,np.logical_and(np.logical_and(    np.isfinite( potential[:,1] )     , potential[:,1] > -1000)  , potential[:,1] < maxEnergy     ) ))[0][0]
     MaskEnd = np.where(  potential[:,0] > 1.5)[0][0]
     return potential[ MaskStart:MaskEnd ]
 
