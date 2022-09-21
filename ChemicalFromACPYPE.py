@@ -8,6 +8,8 @@ parser.add_argument("-s","--scanstructures", type=int,default=0, help="If non-ze
 parser.add_argument("-v","--verbose", type=int,default=0, help="If non-zero, prints debugging messages")
 args = parser.parse_args()
 
+
+
 scanStructures = 0
 if args.scanstructures!=0:
     scanStructures = 1
@@ -15,12 +17,18 @@ if args.scanstructures!=0:
 targetList = [
 ["ETHANE-AC","CC","0"]
 ]
+acpypeOutputFolder = "ACPYPE2CSV"
 
 def GenerateChemStructure( chemName, chemSmiles, chemCharge):
+    currentDir = os.getcwd()
+    os.chdir(currentDir+"/"+acpypeOutputFolder)
     os.system("acpype -i '"+chemSmiles+"' -b "+chemName+" -n "+chemCharge)
-    gmxITP = open(chemName+".acpype/"+chemName+"_GMX.itp", "r")
-    gmxGRO = open(chemName+".acpype/"+chemName+"_GMX.gro","r")
-    outputfile = open( "../Structures/Chemicals/"+chemName+"_combined.csv","w")
+    #os.system("mv " + chemName+".acpype" + " " +  acpypeOutputFolder)
+    #os.system("mv " + chemName+".mol2" + " " +  acpypeOutputFolder)
+    os.chdir(currentDir)
+    gmxITP = open(acpypeOutputFolder+"/"+chemName+".acpype/"+chemName+"_GMX.itp", "r")
+    gmxGRO = open(acpypeOutputFolder+"/"+chemName+".acpype/"+chemName+"_GMX.gro","r")
+    outputfile = open( "Structures/Chemicals/"+chemName+"_combined.csv","w")
     lastITP = ""
     while lastITP != "[ atomtypes ]":
         lastITP = gmxITP.readline().strip()
@@ -59,12 +67,12 @@ def GenerateChemStructure( chemName, chemSmiles, chemCharge):
 
 #Append targets found in the ChemicalDefinitions if asked
 if scanStructures == 1:
-    chemDefFile = open("../Structures/ChemicalDefinitions.csv","r")
+    chemDefFile = open("Structures/ChemicalDefinitions.csv","r")
     for line in chemDefFile:
         if line[0]=="#":
             continue
         lineTerms = line.strip().split(",")
-        if os.path.exists("../Structures/Chemicals/"+lineTerms[0]+"_combined.csv"):
+        if os.path.exists("Structures/Chemicals/"+lineTerms[0]+"_combined.csv"):
             continue
         else:
             smilesCode = lineTerms[1].replace("<COMMA>",",").replace("<HASH>","#")
