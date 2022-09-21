@@ -12,7 +12,7 @@ import HGEFuncs
 
 import argparse
 
-parser = argparse.ArgumentParser(description="Parameters for HGExpandSurfacePotential")
+parser = argparse.ArgumentParser(description="Parameters for HGExpandChemicalPotential")
 parser.add_argument("-f","--forcerecalc", type=int,default=0,help="If 1 then potential HGE coeffs are recalculated even if their table already exists")
 args = parser.parse_args()
 

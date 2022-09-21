@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+import os
 from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QPushButton, QFileDialog
 from PySide6.QtCore import QFile, QProcess
 from pmfpredictorgui.pmfpredictordashboard import Ui_MainWindow
@@ -55,10 +56,10 @@ class MainWindow(QMainWindow):
             print("Target not recognised or not implemented")
         if foundScript == 1:
             self.disableButtonSet()
-            self.processHandler.start("python3",argSet)
             self.processHandler.readyReadStandardOutput.connect(self.handle_stdout)
             self.processHandler.readyReadStandardError.connect(self.handle_stderr)
             self.processHandler.finished.connect(self.enableButtonSet)
+            self.processHandler.start("python3",argSet)
     def message(self,s):
         self.ui.textEdit.append(s)
     def handle_stdout(self):
@@ -78,14 +79,64 @@ class MainWindow(QMainWindow):
             self.ui.text_newNPLocation.setText(  self.NPdialog.selectedFiles()[0])
             print(self.npFileFolder)
     def buildNPStructure(self):
+        
+        surfDefFile = open("Structures/SurfaceDefinitions.csv","r")
+        knownSurfIDs = []
+        for line in surfDefFile:
+            if line[0]=="#":
+                continue
+            lineTerms = line.strip().split(",")
+            knownSurfIDs.append(lineTerms[0])
+        surfDefFile.close()        
+
+
         targetDir = self.ui.text_newNPLocation.text()
         targetName = self.ui.text_newNPName.text()
+
+        if targetName in knownSurfIDs:
+            self.message("A surface named " +targetName +" already exists, please choose a new name")
+            return 0
+
+        shapeMap = { "Plane":"plane", "Cylinder":"cylinder"}
+        sourceMap = {"SU (no ions)":"0", "SU (ions)":"1", "UCD":"2"}
+        ssdMap = {"Fixed surface":"0", "Min z. dist":"1", "COM - slab width":"2", "Fixed (graphene-like)":"3"}
+        targetShapeString = shapeMap.get( self.ui.cb_npShape.currentText(),"plane")
+        targetSourceString = sourceMap.get( self.ui.cb_npSource.currentText(), "1")
+        targetSSDString = ssdMap.get(self.ui.cb_npSSD.currentText() , "0") 
+        
         print("Making NP structure file: ", targetDir)
         res = charmmguiToCSV(targetName,targetDir)
         if res == 0:
             self.message("Failed to create NP, please check folder location\n")
         else:
-            self.message("Created NP successfully. Remember to update SurfaceDefinitions.csv to define the geometry, source and SSD type.")
+            self.message("NP structure converted, appending to SurfaceDefinitions\n")
+            newSurfString = targetName+","+targetShapeString+","+targetSourceString+","+targetSSDString
+            self.message(newSurfString)
+            surfDefFile = open("Structures/SurfaceDefinitions.csv","a")
+            surfDefFile.write(newSurfString+"\n")
+            surfDefFile.close()
+    def addChemStructure(self):
+        chemDefFile = open("Structures/ChemicalDefinitions.csv","r")
+        knownChemIDs = []
+        for line in chemDefFile:
+            if line[0]=="#":
+                continue
+            lineTerms = line.strip().split(",")
+            knownChemIDs.append(lineTerms[0])
+        chemDefFile.close()
+        chemID = self.ui.text_newChemID.text().replace(",","<COMMA>").replace("#","<HASH>")
+        chemSMILES = self.ui.text_newChemSmiles.text().replace(",","<COMMA>").replace("#","<HASH>")
+        chemCharge = self.ui.spinBox_newChemCharge.value()
+        chemDesc = self.ui.text_newChemDesc.text().replace(",","<COMMA>").replace("#","<HASH>")
+        chemStringOut = chemID+","+chemSMILES+","+str(chemCharge)+","+chemDesc
+        if chemID in knownChemIDs:
+            self.message("The chemical "+chemID+" is already registered, please choose a new name")
+        else:
+            self.message("Appending chemical string: "+chemStringOut)
+            chemDefFile = open("Structures/ChemicalDefinitions.csv","a")
+            chemDefFile.write(chemStringOut+"\n")
+            chemDefFile.close()
+            self.message("Chemical added, generate the structure using the script with Scan checked or manually add one")
     def __init__(self):
         super(MainWindow,self).__init__()
         self.ui = Ui_MainWindow()
@@ -103,6 +154,7 @@ class MainWindow(QMainWindow):
 
         self.npFileFolder = []
         self.ui.button_buildNP.clicked.connect(self.buildNPStructure)
+        self.ui.button_addChem.clicked.connect(self.addChemStructure)
         self.ui.button_FindNPDownloadFolder.clicked.connect(self.getFolderDialog)
         self.ui.actionClose.triggered.connect(self.close)
 

@@ -14,9 +14,10 @@ scanStructures = 0
 if args.scanstructures!=0:
     scanStructures = 1
 #An example of the structure required for targets: a short descriptive name without underscores, the SMILES code, and the total charge.
-targetList = [
-["ETHANE-AC","CC","0"]
-]
+#targetList = [
+#["ETHANE-AC","CC","0"]
+#]
+targetList = []
 acpypeOutputFolder = "ACPYPE2CSV"
 
 def GenerateChemStructure( chemName, chemSmiles, chemCharge):
