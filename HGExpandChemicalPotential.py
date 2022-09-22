@@ -84,14 +84,14 @@ for material in materialSet:
     materialID = material[0]
     chemSMILES = material[1]
     moleculePotentials = {}
-    print("Starting chemical ", materialID)
+    print("Starting chemical "+ materialID,flush=True)
     #load chem-probe potential and HGE
     try:
         freeEnergies0 = np.genfromtxt( potentialFolder+materialID+"_fev6.dat",delimiter=",")
         freeEnergies = freeEnergies0.copy()
         freeEnergiesNames = np.genfromtxt( potentialFolder+materialID+"_fev6.dat",delimiter=",",names=True)
         freeEnergyHeader = list(freeEnergiesNames.dtype.names)
-        print(freeEnergyHeader)
+        #print(freeEnergyHeader)
     except:
         print("Free energy file not found for ", materialID)
         materialNotFoundList.append( material)
@@ -111,13 +111,14 @@ for material in materialSet:
         # except:
         #print("Could not locate water potentials for", materialID)
         #continue      
-
-    if os.path.exists("Datasets/ChemicalHGE/"+materialID+"-noise-"+str(noiseReplicas)+".csv") and args.forcerecalc == 0:
-        print("File for ", materialID, "already exists and force recalce = 0, skipping")
-        continue
-    chemOutfile=open("Datasets/ChemicalHGE/"+materialID+"-noise-"+str(noiseReplicas)+".csv","w")
+    skipCalc = 0
+    targetOutputPath = "Datasets/ChemicalHGE/"+materialID+"-noise-"+str(noiseReplicas)+".csv"
+    if os.path.exists(targetOutputPath) and args.forcerecalc == 0:
+        #print("File for ", materialID, "already exists and force recalc = 0, skipping")
+        skipCalc =1
+        #preloadedData = np.genfromtxt(targetOutputPath,delimiter=",")
+    chemOutfile=open(targetOutputPath,"w")
     chemOutfile.write( ",".join([str(a) for a in headerSet]) +"\n")
-
     for r0Val in r0ValRange:   
         for itNum in range(noiseReplicas):
             resSet = [materialID, chemSMILES]   

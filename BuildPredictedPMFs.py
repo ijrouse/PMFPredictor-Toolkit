@@ -19,28 +19,47 @@ import HGEFuncs
 #datasetAll= pd.read_csv("HGE16-MaterialChemicalCoefficientDescriptors_R0E0_may26.csv")
 
 #Prepare the set of surfaces and chemicals
-targetMolecules = pd.read_csv("Datasets/ChemicalPotentialCoefficients-aug26.csv")
-targetSurfaces = pd.read_csv("Datasets/SurfacePotentialCoefficients-sep07.csv")
+targetMolecules = pd.read_csv("Datasets/ChemicalPotentialCoefficients-sep15.csv")
+targetSurfaces = pd.read_csv("Datasets/SurfacePotentialCoefficients-sep15.csv")
 r0TargetVal = 0.2
 kbTVal = 1
 matchSource = True
 
-targetMolecules["CR0Dist"] = np.sqrt( (targetMolecules["ChemCProbeR0"] - r0TargetVal  )**2 )
-targetMolecules.sort_values( by=["CR0Dist"] ,ascending=True, inplace=True)
-targetMolecules.drop_duplicates( subset=['ChemID'] , inplace=True,keep='first')
-targetSurfaces["SR0Dist"] = np.sqrt( (targetSurfaces["SurfCProbeR0"] - r0TargetVal  )**2 )
+
+#targetMolecules["CR0Dist"] = np.sqrt( (targetMolecules["ChemCProbeR0"] - r0TargetVal  )**2 )
+#targetMolecules.sort_values( by=["CR0Dist"] ,ascending=True, inplace=True)
+#targetMolecules.drop_duplicates( subset=['ChemID'] , inplace=True,keep='first')
+
+#Generate a dataframe of surfaces at their "natural" R0 values
+targetSurfaces["SR0Dist"] = np.sqrt( (targetSurfaces["SurfCProbeR0"] - (r0TargetVal + targetSurfaces["SurfAlignDist"])  )**2 )
 targetSurfaces.sort_values( by=["SR0Dist"] ,ascending=True, inplace=True)
 targetSurfaces.drop_duplicates( subset=['SurfID'] , inplace=True,keep='first')
-
-
 uniqueMaterials = targetSurfaces['SurfID'].unique().tolist()
 
+#minNeededR0 = np.amin( targetSurfaces["SR0Dist"].to_numpy() ) + r0TargetVal
+#maxNeededR0 = np.amax( targetSurfaces["SR0Dist"].to_numpy() ) +r0TargetVal
 
+datasubsets = []
+for index,surfRow in targetSurfaces.iterrows():
+    moleculeWorking = targetMolecules.copy()
+    moleculeWorking["CR0Dist"] = np.sqrt( (moleculeWorking["ChemCProbeR0"] - ( surfRow["SR0Dist"] )  )**2 ) 
+    moleculeWorking.sort_values( by=["CR0Dist"] ,ascending=True, inplace=True)
+    moleculeWorking.drop_duplicates( subset=['ChemID'],inplace=True,keep='first')
+    datasubsets.append( pd.merge(moleculeWorking, surfRow,how="cross"))
+combinedDataset = pd.concat(datasubsets)
+print(combinedDataset)
+quit()
+'''
 combinedDataset = pd.merge(targetMolecules,targetSurfaces,how="cross")
+combinedDataset["CR0Dist"] = np.sqrt( (targetMolecules["ChemCProbeR0"] - (r0TargetVal + targetSurfaces["SurfAlignDist"])  )**2 ) 
+combinedDataset["PMFName"] = combinedDataset['SurfID']+"_"+combinedDataset['ChemID']
+combinedDataset.sort_values( by=["CR0Dist"] ,ascending=True, inplace=True)
+combinedDataset.drop_duplicates( subset=['PMFName'], inplace=True,keep='first')
+'''
 #Add in default values for the extra 
 if matchSource == False:
     combinedDataset['source'] = 1
-combinedDataset["r0"] = r0TargetVal
+combinedDataset["r0"] = r0TargetVal + combinedDataset["SurfAlignDist"]
 combinedDataset["resolution"] = 0.005
 #These parameters are unused in prediction mode so can be set to arbitrary values.
 #If changing these does change predictions, this is a bug and should be reported.
@@ -58,7 +77,7 @@ def potentialKLLoss(y_true,y_pred):
     return tf.keras.losses.mean_squared_error( (y_true + 0.0 * y_true * scaleVal)/scaleVal, (y_pred + 0.0 * y_pred * scaleVal)/scaleVal) 
 
 
-rRange = np.arange( r0TargetVal, 1.5, 0.001)
+
 outputVarset = ["A1","A2","A3","A4","A5","A6","A7","A8","A9","A10","A11","A12","A13","A14","A15","A16", "A17","A18","A19","A20" ,"e0predict","Emin","e0predictfrompmf"]
 targetModels = ["PMFPredictor-sep09-simplesplit-bootstrapped-ensemble1","PMFPredictor-sep09-simplesplit-bootstrapped-ensemble2","PMFPredictor-sep09-simplesplit-bootstrapped-ensemble3"]
 for targetModel in targetModels:
@@ -76,10 +95,11 @@ for targetModel in targetModels:
     for index,row in combinedDataset.iterrows():
         materialName = row["SurfID"]
         chemName = row["ChemID"]
-
+        r0Actual = row["r0"]
+        rRange = np.arange( r0Actual, 1.5, 0.001)
         pmf = np.zeros_like(rRange)
         for i in range(1,20):
-            pmf = pmf + row["A"+str(i)+"_predicted"] * HGEFuncs.HGEFunc(rRange, r0TargetVal, i)
+            pmf = pmf + row["A"+str(i)+"_predicted"] * HGEFuncs.HGEFunc(rRange, r0Actual, i)
         finalPMF = np.stack((rRange,pmf),axis=-1)
         finalPMF[:,1] = finalPMF[:,1] - finalPMF[-1,1]
         np.savetxt("predicted_pmfs/"+targetModel+"/"+materialName+"/"+chemName+".dat" ,finalPMF,fmt='%.18f' ,delimiter=",")
@@ -120,6 +140,8 @@ for index,row in combinedDataset.iterrows():
     os.makedirs("predicted_avg_pmfs/"+targetModels[0]+"/"+materialName+"_log",exist_ok=True)
     os.makedirs("predicted_avg_pmfs/"+targetModels[0]+"/"+materialName+"_figs",exist_ok=True)
     chemName = row["ChemID"]
+    r0Actual = row["r0"]
+    rRange = np.arange( r0Actual, 1.5, 0.001)
     simpleAvgPMF = np.zeros_like(rRange)
     logAvgPMF = np.zeros_like(rRange)
     for targetModel in targetModels:

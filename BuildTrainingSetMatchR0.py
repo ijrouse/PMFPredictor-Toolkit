@@ -13,7 +13,7 @@ import random
 numReplicates = 1
 
 if numReplicates==1:
-    chemicalCoefficientFile = open("Datasets/ChemicalPotentialCoefficients-aug26.csv","r")
+    chemicalCoefficientFile = open("Datasets/ChemicalPotentialCoefficients-sep15.csv","r")
 else:
     chemicalCoefficientFile = open("Datasets/ChemicalPotentialCoefficientsNoise10.csv","r")
 chemHeader=chemicalCoefficientFile.readline().strip().split(",")
@@ -26,7 +26,7 @@ for chemLine in knownChems:
 chemicalCoefficientFile.close()
 
 if numReplicates==1:
-    surfaceCoefficientFile = open("Datasets/SurfacePotentialCoefficients-sep07.csv","r")
+    surfaceCoefficientFile = open("Datasets/SurfacePotentialCoefficients-sep15.csv","r")
 else:
     surfaceCoefficientFile = open("Datasets/SurfacePotentialCoefficientsNoise-10.csv","r")
 surfaceHeader=surfaceCoefficientFile.readline().strip().split(",")
@@ -70,7 +70,7 @@ for extraPMFFilename in extraPMFFiles:
     extraFile.close()
 
 
-outputFile = open("Datasets/TrainingData-r0matched-sep07.csv","w")
+outputFile = open("Datasets/TrainingData-r0matched-sep15.csv","w")
 
 #print(pmfCoefficientFileLines[-1])
 print(",".join(headerSet))

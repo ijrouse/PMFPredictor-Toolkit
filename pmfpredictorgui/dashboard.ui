@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>922</width>
+    <width>899</width>
     <height>932</height>
    </rect>
   </property>
@@ -15,650 +15,470 @@
   </property>
   <property name="windowIcon">
    <iconset>
-    <normaloff>pmfp.ico</normaloff>pmfp.ico</iconset>
+    <normaloff>../pmfp.ico</normaloff>../pmfp.ico</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QTextEdit" name="textEdit">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>360</y>
-      <width>881</width>
-      <height>501</height>
-     </rect>
-    </property>
-    <property name="readOnly">
-     <bool>true</bool>
-    </property>
-   </widget>
-   <widget class="QTabWidget" name="tabWidget">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>10</y>
-      <width>881</width>
-      <height>331</height>
-     </rect>
-    </property>
-    <property name="currentIndex">
-     <number>0</number>
-    </property>
-    <widget class="QWidget" name="tab_2">
-     <attribute name="title">
-      <string>Structures</string>
-     </attribute>
-     <widget class="QPushButton" name="button_FindNPDownloadFolder">
-      <property name="geometry">
-       <rect>
-        <x>160</x>
-        <y>100</y>
-        <width>89</width>
-        <height>25</height>
-       </rect>
+   <layout class="QFormLayout" name="formLayout">
+    <item row="0" column="0" colspan="2">
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="currentIndex">
+       <number>0</number>
       </property>
-      <property name="text">
-       <string>Open</string>
+      <widget class="QWidget" name="tab_2">
+       <attribute name="title">
+        <string>Structures</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <layout class="QGridLayout" name="gridLayout_5">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_7">
+            <property name="text">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:20pt; font-weight:600;&quot;&gt;Surface from Charmm-GUI&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLabel" name="label_14">
+            <property name="text">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:20pt; font-weight:600;&quot;&gt;Chemical from SMILES&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <layout class="QGridLayout" name="gridLayout_2">
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_8">
+              <property name="text">
+               <string>Download folder</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLineEdit" name="text_newNPLocation">
+              <property name="text">
+               <string>newsurf-001</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QPushButton" name="button_FindNPDownloadFolder">
+              <property name="text">
+               <string>Find folder</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_9">
+              <property name="text">
+               <string>Surface ID</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QLineEdit" name="text_newNPName">
+              <property name="text">
+               <string>newsurf-001</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="label_11">
+              <property name="text">
+               <string>Shape</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QComboBox" name="cb_npShape">
+              <item>
+               <property name="text">
+                <string>Plane</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Cylinder</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+            <item row="4" column="0">
+             <widget class="QLabel" name="label_12">
+              <property name="text">
+               <string>Source</string>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="1">
+             <widget class="QComboBox" name="cb_npSource">
+              <item>
+               <property name="text">
+                <string>SU (ions)</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>UCD</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>SU (no ions)</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+            <item row="5" column="0">
+             <widget class="QLabel" name="label_13">
+              <property name="text">
+               <string>SSD type</string>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="1">
+             <widget class="QComboBox" name="cb_npSSD">
+              <item>
+               <property name="text">
+                <string>Fixed surface</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Min z. dist</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>COM - slab width</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Fixed (graphene-like)</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item row="1" column="1">
+           <layout class="QFormLayout" name="formLayout_2">
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_15">
+              <property name="text">
+               <string>Chemical ID</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLineEdit" name="text_newChemID">
+              <property name="text">
+               <string>NEWCHEM</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_16">
+              <property name="text">
+               <string>Chemical SMILES</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QLineEdit" name="text_newChemSmiles">
+              <property name="text">
+               <string>CC</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_17">
+              <property name="text">
+               <string>Formal charge</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QSpinBox" name="spinBox_newChemCharge">
+              <property name="minimum">
+               <number>-5</number>
+              </property>
+              <property name="maximum">
+               <number>5</number>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="label_18">
+              <property name="text">
+               <string>Description</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QLineEdit" name="text_newChemDesc">
+              <property name="text">
+               <string>a new chemical</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item row="2" column="0">
+           <widget class="QPushButton" name="button_buildNP">
+            <property name="text">
+             <string>Add Surface</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QPushButton" name="button_addChem">
+            <property name="text">
+             <string>Add Chemical</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab">
+       <attribute name="title">
+        <string>Scripts</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_3">
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_10">
+          <property name="text">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:20pt; font-weight:600;&quot;&gt;PMF Predictor Scripts&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <layout class="QGridLayout" name="gridLayout">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label">
+            <property name="text">
+             <string>Generate missing chemical structures</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QCheckBox" name="b_scanChem">
+            <property name="text">
+             <string>Scan</string>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QPushButton" name="button_runAC">
+            <property name="text">
+             <string>Run</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0" colspan="3">
+           <widget class="Line" name="line">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0" rowspan="2">
+           <widget class="QLabel" name="label_2">
+            <property name="text">
+             <string>Generate chemical potentials</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="2" rowspan="2">
+           <widget class="QPushButton" name="button_runGenChemPot">
+            <property name="text">
+             <string>Run</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QCheckBox" name="b_refreshChemPot">
+            <property name="text">
+             <string>Refresh?</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QLabel" name="label_3">
+            <property name="text">
+             <string>Generate surface potentials</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QCheckBox" name="b_refreshSurfPot">
+            <property name="text">
+             <string>Refresh?</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="2">
+           <widget class="QPushButton" name="button_runGenSurfPot">
+            <property name="text">
+             <string>Run</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0" colspan="3">
+           <widget class="Line" name="line_2">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="0" rowspan="2">
+           <widget class="QLabel" name="label_4">
+            <property name="text">
+             <string>Generate chemical potential expansions</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="2" rowspan="2">
+           <widget class="QPushButton" name="button_runHGEChem">
+            <property name="text">
+             <string>Run</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="1">
+           <widget class="QCheckBox" name="b_refreshHGChem">
+            <property name="text">
+             <string>Refresh?</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="0">
+           <widget class="QLabel" name="label_5">
+            <property name="text">
+             <string>Generate surface potential expansions</string>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="1">
+           <widget class="QCheckBox" name="b_refreshHGSurf">
+            <property name="text">
+             <string>Refresh?</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="2">
+           <widget class="QPushButton" name="button_runHGESurf">
+            <property name="text">
+             <string>Run</string>
+            </property>
+           </widget>
+          </item>
+          <item row="9" column="0" colspan="3">
+           <widget class="Line" name="line_3">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="10" column="0">
+           <widget class="QLabel" name="label_6">
+            <property name="text">
+             <string>Generate PMFs</string>
+            </property>
+           </widget>
+          </item>
+          <item row="10" column="2">
+           <widget class="QPushButton" name="button_runPredict">
+            <property name="text">
+             <string>Run</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_3">
+       <attribute name="title">
+        <string>Tips</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_4">
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_19">
+          <property name="text">
+           <string>Scripts should usually be run starting from the top and working downwards, as this means everything is calculated in order.</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_20">
+          <property name="text">
+           <string>Unless you have a very good reason to change them, the check boxes should be left alone.</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_21">
+          <property name="text">
+           <string>Adding a surface generates the corresponding entry in SurfaceDefinitions and makes a structure file.</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_24">
+          <property name="text">
+           <string>--The folder has to be the base directory, not the GROMACS subfolder. Usually charmm-gui-XXXXXXXXXX</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="0">
+         <widget class="QLabel" name="label_22">
+          <property name="text">
+           <string>Adding a chemical adds the entry to ChemicalDefinitions but doesn't make the structure automatically</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="0">
+         <widget class="QLabel" name="label_23">
+          <property name="text">
+           <string>--Running the script to generate missing chemical structures batch-processes these, or you can manually add one.</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+    <item row="1" column="0" colspan="2">
+     <widget class="QTextEdit" name="textEdit">
+      <property name="readOnly">
+       <bool>true</bool>
       </property>
      </widget>
-     <widget class="QLineEdit" name="text_newNPLocation">
-      <property name="geometry">
-       <rect>
-        <x>160</x>
-        <y>70</y>
-        <width>181</width>
-        <height>21</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>newsurf-001</string>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_7">
-      <property name="geometry">
-       <rect>
-        <x>50</x>
-        <y>20</y>
-        <width>351</width>
-        <height>41</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:20pt; font-weight:600;&quot;&gt;Surface from Charmm-GUI&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-      </property>
-     </widget>
-     <widget class="QLineEdit" name="text_newNPName">
-      <property name="geometry">
-       <rect>
-        <x>160</x>
-        <y>130</y>
-        <width>191</width>
-        <height>21</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>newsurf-001</string>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_8">
-      <property name="geometry">
-       <rect>
-        <x>30</x>
-        <y>70</y>
-        <width>121</width>
-        <height>21</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Download folder</string>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_9">
-      <property name="geometry">
-       <rect>
-        <x>30</x>
-        <y>130</y>
-        <width>101</width>
-        <height>21</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Surface ID</string>
-      </property>
-     </widget>
-     <widget class="QPushButton" name="button_buildNP">
-      <property name="geometry">
-       <rect>
-        <x>160</x>
-        <y>260</y>
-        <width>89</width>
-        <height>31</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Add Surface</string>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_11">
-      <property name="geometry">
-       <rect>
-        <x>30</x>
-        <y>160</y>
-        <width>67</width>
-        <height>17</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Shape</string>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_12">
-      <property name="geometry">
-       <rect>
-        <x>30</x>
-        <y>190</y>
-        <width>67</width>
-        <height>17</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Source</string>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_13">
-      <property name="geometry">
-       <rect>
-        <x>30</x>
-        <y>220</y>
-        <width>67</width>
-        <height>17</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>SSD type</string>
-      </property>
-     </widget>
-     <widget class="QComboBox" name="cb_npShape">
-      <property name="geometry">
-       <rect>
-        <x>160</x>
-        <y>160</y>
-        <width>191</width>
-        <height>25</height>
-       </rect>
-      </property>
-      <item>
-       <property name="text">
-        <string>Plane</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>Cylinder</string>
-       </property>
-      </item>
-     </widget>
-     <widget class="QComboBox" name="cb_npSource">
-      <property name="geometry">
-       <rect>
-        <x>160</x>
-        <y>190</y>
-        <width>191</width>
-        <height>25</height>
-       </rect>
-      </property>
-      <item>
-       <property name="text">
-        <string>SU (ions)</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>UCD</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>SU (no ions)</string>
-       </property>
-      </item>
-     </widget>
-     <widget class="QComboBox" name="cb_npSSD">
-      <property name="geometry">
-       <rect>
-        <x>160</x>
-        <y>220</y>
-        <width>191</width>
-        <height>25</height>
-       </rect>
-      </property>
-      <item>
-       <property name="text">
-        <string>Fixed surface</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>Min z. dist</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>COM - slab width</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>Fixed (graphene-like)</string>
-       </property>
-      </item>
-     </widget>
-     <widget class="QLabel" name="label_14">
-      <property name="geometry">
-       <rect>
-        <x>510</x>
-        <y>20</y>
-        <width>291</width>
-        <height>41</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:20pt; font-weight:600;&quot;&gt;Chemical from SMILES&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-      </property>
-     </widget>
-     <widget class="QLineEdit" name="text_newChemID">
-      <property name="geometry">
-       <rect>
-        <x>680</x>
-        <y>70</y>
-        <width>113</width>
-        <height>25</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>NEWCHEM</string>
-      </property>
-     </widget>
-     <widget class="QLineEdit" name="text_newChemSmiles">
-      <property name="geometry">
-       <rect>
-        <x>680</x>
-        <y>110</y>
-        <width>113</width>
-        <height>25</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>CC</string>
-      </property>
-     </widget>
-     <widget class="QLineEdit" name="text_newChemDesc">
-      <property name="geometry">
-       <rect>
-        <x>660</x>
-        <y>190</y>
-        <width>181</width>
-        <height>25</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>a new chemical</string>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_15">
-      <property name="geometry">
-       <rect>
-        <x>530</x>
-        <y>70</y>
-        <width>111</width>
-        <height>21</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Chemical ID</string>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_16">
-      <property name="geometry">
-       <rect>
-        <x>530</x>
-        <y>110</y>
-        <width>121</width>
-        <height>21</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Chemical SMILES</string>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_17">
-      <property name="geometry">
-       <rect>
-        <x>530</x>
-        <y>150</y>
-        <width>111</width>
-        <height>21</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Formal charge</string>
-      </property>
-     </widget>
-     <widget class="QSpinBox" name="spinBox_newChemCharge">
-      <property name="geometry">
-       <rect>
-        <x>670</x>
-        <y>150</y>
-        <width>44</width>
-        <height>26</height>
-       </rect>
-      </property>
-      <property name="minimum">
-       <number>-5</number>
-      </property>
-      <property name="maximum">
-       <number>5</number>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_18">
-      <property name="geometry">
-       <rect>
-        <x>530</x>
-        <y>190</y>
-        <width>111</width>
-        <height>21</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Description</string>
-      </property>
-     </widget>
-     <widget class="QPushButton" name="button_addChem">
-      <property name="geometry">
-       <rect>
-        <x>650</x>
-        <y>250</y>
-        <width>151</width>
-        <height>31</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Add Chemical</string>
-      </property>
-     </widget>
-    </widget>
-    <widget class="QWidget" name="tab">
-     <attribute name="title">
-      <string>Scripts</string>
-     </attribute>
-     <widget class="QWidget" name="layoutWidget">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>60</y>
-        <width>450</width>
-        <height>217</height>
-       </rect>
-      </property>
-      <layout class="QGridLayout" name="gridLayout">
-       <item row="0" column="0">
-        <widget class="QLabel" name="label">
-         <property name="text">
-          <string>Generate missing chemical structures</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="1">
-        <widget class="QCheckBox" name="b_scanChem">
-         <property name="text">
-          <string>Scan</string>
-         </property>
-         <property name="checkable">
-          <bool>true</bool>
-         </property>
-         <property name="checked">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="2">
-        <widget class="QPushButton" name="button_runAC">
-         <property name="text">
-          <string>Run</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="0" colspan="3">
-        <widget class="Line" name="line">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0" rowspan="2">
-        <widget class="QLabel" name="label_2">
-         <property name="text">
-          <string>Generate chemical potentials</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="2" rowspan="2">
-        <widget class="QPushButton" name="button_runGenChemPot">
-         <property name="text">
-          <string>Run</string>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="1">
-        <widget class="QCheckBox" name="b_refreshChemPot">
-         <property name="text">
-          <string>Refresh?</string>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="0">
-        <widget class="QLabel" name="label_3">
-         <property name="text">
-          <string>Generate surface potentials</string>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="1">
-        <widget class="QCheckBox" name="b_refreshSurfPot">
-         <property name="text">
-          <string>Refresh?</string>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="2">
-        <widget class="QPushButton" name="button_runGenSurfPot">
-         <property name="text">
-          <string>Run</string>
-         </property>
-        </widget>
-       </item>
-       <item row="5" column="0" colspan="3">
-        <widget class="Line" name="line_2">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-        </widget>
-       </item>
-       <item row="6" column="0" rowspan="2">
-        <widget class="QLabel" name="label_4">
-         <property name="text">
-          <string>Generate chemical potential expansions</string>
-         </property>
-        </widget>
-       </item>
-       <item row="6" column="2" rowspan="2">
-        <widget class="QPushButton" name="button_runHGEChem">
-         <property name="text">
-          <string>Run</string>
-         </property>
-        </widget>
-       </item>
-       <item row="7" column="1">
-        <widget class="QCheckBox" name="b_refreshHGChem">
-         <property name="text">
-          <string>Refresh?</string>
-         </property>
-         <property name="checked">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item row="8" column="0">
-        <widget class="QLabel" name="label_5">
-         <property name="text">
-          <string>Generate surface potential expansions</string>
-         </property>
-        </widget>
-       </item>
-       <item row="8" column="1">
-        <widget class="QCheckBox" name="b_refreshHGSurf">
-         <property name="text">
-          <string>Refresh?</string>
-         </property>
-         <property name="checked">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item row="8" column="2">
-        <widget class="QPushButton" name="button_runHGESurf">
-         <property name="text">
-          <string>Run</string>
-         </property>
-        </widget>
-       </item>
-       <item row="9" column="0" colspan="3">
-        <widget class="Line" name="line_3">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-        </widget>
-       </item>
-       <item row="10" column="0">
-        <widget class="QLabel" name="label_6">
-         <property name="text">
-          <string>Generate PMFs</string>
-         </property>
-        </widget>
-       </item>
-       <item row="10" column="2">
-        <widget class="QPushButton" name="button_runPredict">
-         <property name="text">
-          <string>Run</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-     <widget class="QLabel" name="label_10">
-      <property name="geometry">
-       <rect>
-        <x>30</x>
-        <y>10</y>
-        <width>291</width>
-        <height>41</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:20pt; font-weight:600;&quot;&gt;PMF Predictor Scripts&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-      </property>
-     </widget>
-    </widget>
-    <widget class="QWidget" name="tab_3">
-     <attribute name="title">
-      <string>Tips</string>
-     </attribute>
-     <widget class="QLabel" name="label_19">
-      <property name="geometry">
-       <rect>
-        <x>20</x>
-        <y>20</y>
-        <width>851</width>
-        <height>51</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Scripts should usually be run starting from the top and working downwards, as this means everything is calculated in order.</string>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_20">
-      <property name="geometry">
-       <rect>
-        <x>20</x>
-        <y>70</y>
-        <width>831</width>
-        <height>21</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Unless you have a very good reason to change them, the check boxes should be left alone.</string>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_21">
-      <property name="geometry">
-       <rect>
-        <x>20</x>
-        <y>110</y>
-        <width>851</width>
-        <height>31</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Adding a surface generates the corresponding entry in SurfaceDefinitions and makes a structure file.</string>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_22">
-      <property name="geometry">
-       <rect>
-        <x>20</x>
-        <y>200</y>
-        <width>831</width>
-        <height>31</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Adding a chemical adds the entry to ChemicalDefinitions but doesn't make the structure automatically</string>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_23">
-      <property name="geometry">
-       <rect>
-        <x>50</x>
-        <y>230</y>
-        <width>821</width>
-        <height>31</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Running the script to generate missing chemical structures batch-processes these, or you can manually add one.</string>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_24">
-      <property name="geometry">
-       <rect>
-        <x>50</x>
-        <y>150</y>
-        <width>721</width>
-        <height>21</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>The folder has to be the base directory, not the GROMACS subfolder. Usually charmm-gui-XXXXXXXXXX</string>
-      </property>
-     </widget>
-    </widget>
-   </widget>
+    </item>
+   </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>922</width>
+     <width>899</width>
      <height>22</height>
     </rect>
    </property>

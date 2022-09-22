@@ -7,15 +7,18 @@ from pmfpredictorgui.pmfpredictordashboard import Ui_MainWindow
 from NPtoCSV import charmmguiToCSV
 
 class MainWindow(QMainWindow):
-
+    def updateStatusBar(self,s):
+        self.ui.statusbar.showMessage(s)
     def enableButtonSet(self):
-        #print(self.processHandler.error())
+        for button in self.scriptButtonSet:
+            button.setEnabled(True)
+    def finishExternalScript(self):
         self.processHandler = None
         self.message("-------------------\n")
         self.message("Script finished\n")
         self.message("-------------------\n")
-        for button in self.scriptButtonSet:
-            button.setEnabled(True)
+        self.enableButtonSet()
+        self.updateStatusBar("Ready")
     def disableButtonSet(self):
         for button in self.scriptButtonSet:
             button.setEnabled(False)
@@ -56,9 +59,10 @@ class MainWindow(QMainWindow):
             print("Target not recognised or not implemented")
         if foundScript == 1:
             self.disableButtonSet()
+            self.updateStatusBar("Running "+argSet[0])
             self.processHandler.readyReadStandardOutput.connect(self.handle_stdout)
             self.processHandler.readyReadStandardError.connect(self.handle_stderr)
-            self.processHandler.finished.connect(self.enableButtonSet)
+            self.processHandler.finished.connect(self.finishExternalScript)
             self.processHandler.start("python3",argSet)
     def message(self,s):
         self.ui.textEdit.append(s)
@@ -79,7 +83,7 @@ class MainWindow(QMainWindow):
             self.ui.text_newNPLocation.setText(  self.NPdialog.selectedFiles()[0])
             print(self.npFileFolder)
     def buildNPStructure(self):
-        
+        self.disableButtonSet()
         surfDefFile = open("Structures/SurfaceDefinitions.csv","r")
         knownSurfIDs = []
         for line in surfDefFile:
@@ -115,7 +119,9 @@ class MainWindow(QMainWindow):
             surfDefFile = open("Structures/SurfaceDefinitions.csv","a")
             surfDefFile.write(newSurfString+"\n")
             surfDefFile.close()
+        self.enableButtonSet()
     def addChemStructure(self):
+        self.disableButtonSet()
         chemDefFile = open("Structures/ChemicalDefinitions.csv","r")
         knownChemIDs = []
         for line in chemDefFile:
@@ -137,6 +143,7 @@ class MainWindow(QMainWindow):
             chemDefFile.write(chemStringOut+"\n")
             chemDefFile.close()
             self.message("Chemical added, generate the structure using the script with Scan checked or manually add one")
+        self.enableButtonSet()
     def __init__(self):
         super(MainWindow,self).__init__()
         self.ui = Ui_MainWindow()
@@ -151,7 +158,7 @@ class MainWindow(QMainWindow):
         self.scriptButtonSet = [self.ui.button_runAC,self.ui.button_runGenChemPot,self.ui.button_runGenSurfPot,self.ui.button_runHGEChem,self.ui.button_runHGESurf,self.ui.button_runPredict]
         #set up the buttons for NP conversion
 
-
+        self.updateStatusBar("Ready")
         self.npFileFolder = []
         self.ui.button_buildNP.clicked.connect(self.buildNPStructure)
         self.ui.button_addChem.clicked.connect(self.addChemStructure)
