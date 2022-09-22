@@ -65,7 +65,7 @@ def GenerateChemStructure( chemName, chemSmiles, chemCharge):
     gmxGRO.close()
     gmxITP.close()
     outputfile.close()
-
+    print("Generated structure for "+chemName, flush=True)
 #Append targets found in the ChemicalDefinitions if asked
 if scanStructures == 1:
     chemDefFile = open("Structures/ChemicalDefinitions.csv","r")
@@ -79,6 +79,7 @@ if scanStructures == 1:
             smilesCode = lineTerms[1].replace("<COMMA>",",").replace("<HASH>","#")
             print("Generating structure for", lineTerms[0] , smilesCode, lineTerms[2])
             targetList.append([lineTerms[0], smilesCode, lineTerms[2]]  )
-
+if len(targetList)==0:
+    print("No structures need to be generated",flush=True)
 for target in targetList:
     GenerateChemStructure( target[0], target[1], target[2])

@@ -160,7 +160,7 @@ for material in materialSet:
             if itNum == 0  :
                 outfile.write(resLine+"\n")
     chemOutfile.close()
-
+    print("Completed "+materialID,flush=True)
 '''
 
 

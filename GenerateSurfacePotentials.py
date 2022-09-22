@@ -214,7 +214,7 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
     pmfDelta = requiredOffsetFE + ssdDelta
     offsetResultFile.write(surfaceName +","+str(zeroLevelOffset)+","   +str(requiredOffsetFE)+","+str(ssdRefDist) +"\n")    
     np.savetxt(outputTarget, resArray, fmt='%2.7f',delimiter=",", header=feFileHeader)
-
+    print("Completed point potentials",flush=True)
     #calculate extra molecules and save them out to individual files
     for moleculeProbeDef in moleculeProbes:
         moleculeTag = moleculeProbeDef[0]
@@ -285,5 +285,6 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
             waterResArray = waterResArray[ waterResArray[:,0] > lastWaterInfPoint ]
         waterResArray[:,2] = waterResArray[:,1] + requiredOffsetFE
         np.savetxt(outputLoc, waterResArray, fmt='%2.7f',delimiter=",", header="r[nm],d[nm],daligned[nm],U"+moleculeTag+"(d)[kj/mol]")    
-
+        print("Completed "+moleculeTag,flush=True)
+    print("Completed "+surfaceName,flush=True)
 offsetResultFile.close()

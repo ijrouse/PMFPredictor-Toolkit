@@ -150,7 +150,7 @@ for material in materialSet:
         continue     
     '''
     if os.path.exists("Datasets/SurfaceHGE/"+materialID+"-noise-"+str(noiseReplicas)+ ".csv") and args.forcerecalc == 0:
-        print("File for ", materialID, "already exists and force recalce = 0, skipping")
+        print("File for ", materialID, "already exists and force recalce = 0, skipping",flush=True)
         continue
     surfaceOutfile=open("Datasets/SurfaceHGE/"+materialID+"-noise-"+str(noiseReplicas)+ ".csv","w")
     surfaceOutfile.write( ",".join([str(a) for a in headerSet]) +"\n")
@@ -193,6 +193,6 @@ for material in materialSet:
                 if energyTarget == energyTargetBase and itNum == 0:
                     outfile.write(resLine+"\n")
     surfaceOutfile.close()            
-                
+    print("Completed "+materialID,flush=True)
                 
 outfile.close()

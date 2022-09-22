@@ -176,7 +176,7 @@ for target in targetSet[args.initial::args.step]:
         resArray = np.array(resList)
         resArray = resArray[    resArray[:,0] > lastInfPoint ]
         np.savetxt( feOutput, resArray, fmt='%2.7f',delimiter=",", header=feFileHeader)
-    
+        print("Completed point probe potentials",flush=True)
 
     for moleculeProbeDef in moleculeProbes:
         moleculeTag = moleculeProbeDef[0]
@@ -222,4 +222,5 @@ for target in targetSet[args.initial::args.step]:
         waterResArray = np.array(waterResList)
         waterResArray = waterResArray[ waterResArray[:,0] > lastWaterInfPoint ]
         np.savetxt( outputLoc, waterResArray, fmt='%2.7f',delimiter=",", header="r[nm],d[nm],daligned[nm],U"+moleculeTag+"(d)[kj/mol]")
-
+        print("Completed "+moleculeTag,flush=True)
+    print("Completed "+targetName,flush=True)
