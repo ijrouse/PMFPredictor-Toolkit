@@ -52,7 +52,7 @@ class MainWindow(QMainWindow):
             argSet = ["HGExpandSurfacePotential.py",argString]
         elif buttonLabel=="runPredict":
             foundScript = 1
-            argString  = "-f "+str(int(extraArgs))
+            argString  = ""
             argSet = ["BuildPredictedPMFs.py",""]
 
         else:
