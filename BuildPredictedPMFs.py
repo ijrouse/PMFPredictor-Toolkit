@@ -42,7 +42,7 @@ uniqueMaterials = targetSurfaces['SurfID'].unique().tolist()
 datasubsets = []
 for index,surfRow in targetSurfaces.iterrows():
     moleculeWorking = targetMolecules.copy()
-    moleculeWorking["CR0Dist"] = np.sqrt( (moleculeWorking["ChemCProbeR0"] - ( r0TargetVal + targetSurfaces["SurfAlignDist"] )  )**2 ) 
+    moleculeWorking["CR0Dist"] = np.sqrt( (moleculeWorking["ChemCProbeR0"] - ( r0TargetVal + surfRow["SurfAlignDist"] )  )**2 ) 
     moleculeWorking.sort_values( by=["CR0Dist"] ,ascending=True, inplace=True)
     moleculeWorking.drop_duplicates( subset=['ChemID'],inplace=True,keep='first')
     datasubsets.append( pd.merge(moleculeWorking, surfRow,how="cross"))
