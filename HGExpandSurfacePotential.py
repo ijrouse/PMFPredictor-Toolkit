@@ -37,6 +37,9 @@ r0ValRange =  np.arange( minR0, maxR0, 0.01)
 noiseReplicas = 1
 potentialFolder = "SurfacePotentials/"
 
+os.makedirs(potentialFolder,exist_ok=True)
+os.makedirs("Datasets/SurfaceHGE",exist_ok=True)
+
 outfile=open("Datasets/SurfacePotentialCoefficients-sep15.csv","w")
 noiseoutfile=open("Datasets/SurfacePotentialCoefficientsNoise-"+str(noiseReplicas)+"-sep15.csv","w")
 ljHGELabels = []
