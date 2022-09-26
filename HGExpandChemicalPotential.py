@@ -31,7 +31,12 @@ nMaxValAll = 20
 fitEnergyStart = 25
 r0ValAll = 0.25
 
+
+
 potentialFolder = "ChemicalPotentials/"
+
+os.makedirs(potentialFolder,exist_ok=True)
+os.makedirs("Datasets/ChemicalHGE",exist_ok=True)
 
 outfile=open("Datasets/ChemicalPotentialCoefficients-sep15.csv","w")
 noiseoutfile=open("Datasets/ChemicalPotentialCoefficientsNoise"+str(noiseReplicas)+"-sep15.csv","w")
