@@ -38,17 +38,23 @@ uniqueMaterials = targetSurfaces['SurfID'].unique().tolist()
 
 #minNeededR0 = np.amin( targetSurfaces["SR0Dist"].to_numpy() ) + r0TargetVal
 #maxNeededR0 = np.amax( targetSurfaces["SR0Dist"].to_numpy() ) +r0TargetVal
-
+print(uniqueMaterials)
 datasubsets = []
-for index,surfRow in targetSurfaces.iterrows():
+for uniqueMaterial in uniqueMaterials:
+    print(uniqueMaterial)
+    targetSurface = targetSurfaces[ targetSurfaces[ "SurfID"] == uniqueMaterial].head(1)
+    chemR0Target =  ((r0TargetVal + targetSurface["SurfAlignDist"]).to_numpy())[0]
     moleculeWorking = targetMolecules.copy()
-    moleculeWorking["CR0Dist"] = np.sqrt( (moleculeWorking["ChemCProbeR0"] - ( r0TargetVal + surfRow["SurfAlignDist"] )  )**2 ) 
+    moleculeWorking["CR0Dist"] = np.sqrt( (moleculeWorking["ChemCProbeR0"] - (chemR0Target )  )**2 ) 
     moleculeWorking.sort_values( by=["CR0Dist"] ,ascending=True, inplace=True)
     moleculeWorking.drop_duplicates( subset=['ChemID'],inplace=True,keep='first')
-    datasubsets.append( pd.merge(moleculeWorking, surfRow,how="cross"))
+    datasubsets.append( pd.merge(targetSurface,moleculeWorking,how="cross"))
+
+    
 combinedDataset = pd.concat(datasubsets)
 print(combinedDataset)
-
+combinedDataset.to_csv("testout.csv")
+quit()
 '''
 combinedDataset = pd.merge(targetMolecules,targetSurfaces,how="cross")
 combinedDataset["CR0Dist"] = np.sqrt( (targetMolecules["ChemCProbeR0"] - (r0TargetVal + targetSurfaces["SurfAlignDist"])  )**2 ) 
