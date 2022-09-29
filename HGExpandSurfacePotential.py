@@ -13,6 +13,8 @@ import HGEFuncs
 
 parser = argparse.ArgumentParser(description="Parameters for HGExpandSurfacePotential")
 parser.add_argument("-f","--forcerecalc", type=int,default=0,help="If 1 then potential HGE coeffs are recalculated even if their table already exists")
+parser.add_argument("-i","--initial", type=int, default=0,help="Initial structure to start calculating for multiprocessing")
+parser.add_argument("-s","--step", type=int, default=1,help="Stride for slicing for multiprocessing")
 args = parser.parse_args()
 warnings.filterwarnings('ignore')
 
@@ -40,7 +42,7 @@ potentialFolder = "SurfacePotentials/"
 os.makedirs(potentialFolder,exist_ok=True)
 os.makedirs("Datasets/SurfaceHGE",exist_ok=True)
 
-outfile=open("Datasets/SurfacePotentialCoefficients-sep15.csv","w")
+outfile=open("Datasets/SurfacePotentialCoefficients-sep27.csv","w")
 noiseoutfile=open("Datasets/SurfacePotentialCoefficientsNoise-"+str(noiseReplicas)+"-sep15.csv","w")
 ljHGELabels = []
 electroHGELabels = []
@@ -90,7 +92,7 @@ for line in offsetDictFileLines:
         firstline = 1
         continue
     lineParts =  line.strip().split(",")
-    offsetDict[lineParts[0]] = [float(lineParts[2]),float(lineParts[3])] 
+    offsetDict[lineParts[0]] = [float(lineParts[2]),float(lineParts[3]),float(lineParts[4])   ] 
 offsetDictFile.close()
 
 
@@ -102,19 +104,20 @@ for probeDef in allProbes:
         allLabels.append("Surf"+probeLabel+"ProbeC"+str(i))
     allLabels.append("Surf"+probeLabel+"ProbeEMin")
     allLabels.append("Surf"+probeLabel+"ProbeRightEMin")    
-
+    allLabels.append("Surf"+probeLabel+"EAtR0")  
 #headerSet =  [ "SurfID", "shape", "numericShape", "source",  "SurfCProbeR0" ] + CHGELabels + ["SurfKProbeR0"] + KHGELabels + ["SurfClProbeR0"] + ClHGELabels  + ["SurfWaterR0"]+ waterHGELabels
-headerSet = [ "SurfID", "shape", "numericShape", "source","ssdType" ,"SurfAlignDist","SSDRefDist"] + allLabels
+headerSet = [ "SurfID", "shape", "numericShape", "source","ssdType" ,"SurfAlignDist","SSDRefDist","MethaneOffset"] + allLabels
 outfile.write( ",".join([str(a) for a in headerSet]) +"\n")
 noiseoutfile.write( ",".join([str(a) for a in headerSet]) +"\n")
 
-for material in materialSet:
+for material in materialSet[args.initial::args.step]:
     materialID = material[0]
     print("Starting material ", materialID)
     print("Surface alignment offset", offsetDict[materialID])
     alignOffsets = offsetDict[materialID]
     alignOffset =alignOffsets[0] 
     ssdRefDist =  alignOffsets[1]
+    methaneOffset = alignOffsets[2]
     materialShape = material[1]
     materialPMFSource = material[2]
     materialSSDType = material[3]
@@ -152,15 +155,21 @@ for material in materialSet:
         print("Could not locate methane potentials for", materialID)
         continue     
     '''
-    if os.path.exists("Datasets/SurfaceHGE/"+materialID+"-noise-"+str(noiseReplicas)+ ".csv") and args.forcerecalc == 0:
+    surfaceRecordFile = "Datasets/SurfaceHGE/"+materialID+"-noise-"+str(noiseReplicas)+ ".csv"
+    if os.path.exists(surfaceRecordFile) and args.forcerecalc == 0:
         print("File for ", materialID, "already exists and force recalce = 0, skipping",flush=True)
+        precalcFile = open(surfaceRecordFile,"r")
+        precalcFile.readline()
+        for resLine in precalcFile:
+            outfile.write(resLine)
+        precalcFile.close()
         continue
-    surfaceOutfile=open("Datasets/SurfaceHGE/"+materialID+"-noise-"+str(noiseReplicas)+ ".csv","w")
+    surfaceOutfile=open(surfaceRecordFile,"w")
     surfaceOutfile.write( ",".join([str(a) for a in headerSet]) +"\n")
     for energyTarget in energyTargetSet:   
         for r0Val in r0ValRange:
             for itNum in range(noiseReplicas):
-                resSet = [ materialID, materialShape, numericShape ,materialPMFSource,materialSSDType,alignOffset,ssdRefDist]   
+                resSet = [ materialID, materialShape, numericShape ,materialPMFSource,materialSSDType,alignOffset,ssdRefDist,methaneOffset ]   
                 for probeDef in allProbes:
                     probe = probeDef[0]
                     if probeDef[1] != "":
@@ -184,10 +193,11 @@ for material in materialSet:
                     probeMinEnergy = np.amin( probeFreeEnergies[:,1])
                     probeRightMinEnergy = np.amin( probeFreeEnergiesSubset[:,1])
                     #r0Val =0.2 # max(0.1, estimateValueLocation(probeFreeEnergies,energyTarget)[0])
-                    probeHGE= HGEFuncs.HGECoeffs( probeFreeEnergies, r0Val, nMaxValAll)
+                    probeHGE= HGEFuncs.HGECoeffsInterpolate( probeFreeEnergies, r0Val, nMaxValAll)
                     probeHGE.insert(1, probeFinalEnergy)
                     probeHGE.append(probeMinEnergy)
                     probeHGE.append(probeRightMinEnergy)
+                    probeHGE.append(probeFreeEnergiesSubset[0,1])
                     resSet = resSet + probeHGE
                 resLine = ",".join([str(a) for a in resSet])
                 noiseoutfile.write(resLine+"\n")

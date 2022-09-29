@@ -64,6 +64,21 @@ def centerProbe2( probeDef):
     return probeDef
 
 
+def klPotentialDivergence(potTrue,potPred,kbTVal = 1,rmaxVal=1.5):
+    '''Given potential 1 (true potential) and potential 2 (approximate potential) calculate the KL divergence via the probability distribution, taking kT=1 by default'''
+    #print(potTrue.shape)
+    #print(potPred.shape)
+    eadsTrue = - kbTVal * np.log(  np.trapz(np.exp(- potTrue[:,1]/kbTVal) , potTrue[:,0])/np.trapz(np.ones_like(potTrue[:,0]), potTrue[:,0])   )
+    eadsPred = - kbTVal * np.log(  np.trapz(np.exp(- potPred[:,1]/kbTVal), potPred[:,0])/np.trapz(np.ones_like(potPred[:,0]), potPred[:,0])   )
+    hgePotsTrueShift = eadsTrue - potTrue[:,1]
+    hgePotsPredShift = eadsPred - potPred[:,1]
+    weightFunc =  np.exp( (hgePotsTrueShift)/kbTVal)/(kbTVal*rmaxVal)
+    weightFunc = np.where( np.isfinite(weightFunc), weightFunc,1e-12) 
+    klLoss= np.trapz(  weightFunc  * (hgePotsTrueShift  - hgePotsPredShift)    , potTrue[:,0])
+    return klLoss
+
+
+
 class MoleculeProbe:
     def __init__(self,name,atomSet):
         self.name = name
@@ -115,10 +130,11 @@ def getProbeEnergy( chargeBroadcast, epsBroadcast,sigmaBroadcast, distArray, pro
     ljPotential = np.sum( 4 * epsCombined * (scaledDists**12 - scaledDists**6 ), axis=-1) #sum over atoms
     totalPotential = electrostaticPotential + ljPotential
     probeFreeEnergy=-conversionFactor * np.log( np.sum(   pointWeights * np.exp( -totalPotential / conversionFactor) )   /np.sum(pointWeights)  )
+    #probeSimpleEnergy =np.sum( totalPotential*pointWeights)/np.sum(pointWeights)
     if not np.isfinite(probeFreeEnergy):
         probeFreeEnergy = np.amin(totalPotential)
-    probeSimpleEnergy = np.amin(totalPotential)
-    return totalPotential,probeFreeEnergy,probeSimpleEnergy
+    probeMinEnergy = np.amin(totalPotential)
+    return totalPotential,probeFreeEnergy,probeMinEnergy
 
 #deprecated, remove once tests are done
 pointProbesList =[

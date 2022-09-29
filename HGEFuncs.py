@@ -8,15 +8,6 @@ def HGEFunc(r, r0, n):
     '''Return the HGE basis function of order n, parameter r0'''
     return (-1)**(1+n) * np.sqrt( 2*n - 1) * np.sqrt(r0)/r * scspec.hyp2f1(1-n,n,1,r0/r)
 
-def HGECoeffs( inputPotential, r0Val, nmax):
-    '''Generates the HGE expansion for an input potential of shape [ [r,U(r) ] ] up to order nmax using parameter r0'''
-    r0Actual = max(np.amin(inputPotential[:,0]), r0Val)
-    inputPotential = inputPotential[ inputPotential[:,0] >= r0Actual ]
-    hgeCoeffRes = [r0Actual]
-    for n in range(1,nmax+1):
-        hgeCoeff =  scipy.integrate.simpson( inputPotential[:,1]*HGEFunc( inputPotential[:,0] ,r0Actual, n),  inputPotential[:,0] )
-        hgeCoeffRes.append(hgeCoeff)
-    return hgeCoeffRes
 
 def estimateValueLocation( potential, target):
     firstIndex =   np.nonzero( potential[:,1] < target)[0][0] 
@@ -49,6 +40,17 @@ def applyNoise(freeEnergySet,deltarsd=0.01,alphasd=0.1,epssd=0.2):
     freeEnergySet[:,1] = freeEnergySet[:,1] * np.random.normal( 1, alphasd) + np.random.normal( 0, epssd, len(freeEnergySet))
     return freeEnergySet
 
+
+def HGECoeffs( inputPotential, r0Val, nmax):
+    '''Generates the HGE expansion for an input potential of shape [ [r,U(r) ] ] up to order nmax using parameter r0'''
+    r0Actual = max(np.amin(inputPotential[:,0]), r0Val)
+    inputPotential = inputPotential[ inputPotential[:,0] >= r0Actual ]
+    hgeCoeffRes = [r0Actual]
+    for n in range(1,nmax+1):
+        hgeCoeff =  scipy.integrate.simpson( inputPotential[:,1]*HGEFunc( inputPotential[:,0] ,r0Actual, n),  inputPotential[:,0] )
+        hgeCoeffRes.append(hgeCoeff)
+    return hgeCoeffRes
+
 def HGECoeffsInterpolate( inputPotential, r0Val, nmax):
     r0Actual = r0Val
     potentialInterpolated = scipy.interpolate.interp1d(inputPotential[:,0],inputPotential[:,1],  bounds_error=False,fill_value="extrapolate")
@@ -68,3 +70,24 @@ def HGECoeffsInterpolate( inputPotential, r0Val, nmax):
         hgeCoeffRes.append(hgeCoeffGaussian[0])
     #print(hgeCoeffRes)
     return hgeCoeffRes
+    
+def loadPMF(target):
+    PMFData = []
+    try:
+        pmfText = open(target , "r")
+        for line in pmfText:
+            if line[0] == "#":
+                continue
+            if "," in line:
+                lineTerms = line.strip().split(",")
+            else:
+                lineTerms = line.split()
+            PMFData.append([float(lineTerms[0]),float(lineTerms[1])])
+        pmfText.close()
+        foundPMF = 1
+        print("Loaded ", target)
+        PMFData = np.array(PMFData)
+        PMFData[:,1] = PMFData[:,1] - PMFData[-1,1] #set to 0 at end of PMF
+        return PMFData
+    except: 
+        return [-1]

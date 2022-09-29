@@ -8,12 +8,15 @@ import datetime
 import scipy.integrate
 import scipy.interpolate
 import HGEFuncs
-
+import warnings
+warnings.filterwarnings('ignore')
 
 import argparse
 
 parser = argparse.ArgumentParser(description="Parameters for HGExpandChemicalPotential")
 parser.add_argument("-f","--forcerecalc", type=int,default=0,help="If 1 then potential HGE coeffs are recalculated even if their table already exists")
+parser.add_argument("-i","--initial", type=int, default=0,help="Initial structure to start calculating for multiprocessing")
+parser.add_argument("-s","--step", type=int, default=1,help="Stride for slicing for multiprocessing")
 args = parser.parse_args()
 
 #    freeEnergySet[:,0] = freeEnergySet[:,0] + np.random.normal( 0, 0.01)
@@ -75,7 +78,7 @@ for probeDef in allProbes:
         allLabels.append("Chem"+probeLabel+"ProbeC"+str(i))
     allLabels.append("Chem"+probeLabel+"ProbeEMin")
     allLabels.append("Chem"+probeLabel+"ProbeRightEMin")
-
+    allLabels.append("Chem"+probeLabel+"EAtR0")
 
 
 #headerSet =  [ "SurfID", "shape", "numericShape", "source",  "SurfCProbeR0" ] + CHGELabels + ["SurfKProbeR0"] + KHGELabels + ["SurfClProbeR0"] + ClHGELabels  + ["SurfWaterR0"]+ waterHGELabels
@@ -85,7 +88,7 @@ noiseoutfile.write( ",".join([str(a) for a in headerSet]) +"\n")
 
 
 materialNotFoundList = []
-for material in materialSet:
+for material in materialSet[args.initial::args.step]:
     materialID = material[0]
     chemSMILES = material[1]
     moleculePotentials = {}
@@ -122,6 +125,12 @@ for material in materialSet:
         #print("File for ", materialID, "already exists and force recalc = 0, skipping")
         skipCalc =1
         #preloadedData = np.genfromtxt(targetOutputPath,delimiter=",")
+        precalcFile = open(targetOutputPath,"r")
+        precalcFile.readline()
+        for resLine in precalcFile:
+            outfile.write(resLine)
+        precalcFile.close()
+        continue
     chemOutfile=open(targetOutputPath,"w")
     chemOutfile.write( ",".join([str(a) for a in headerSet]) +"\n")
     for r0Val in r0ValRange:   
@@ -154,10 +163,11 @@ for material in materialSet:
                 probeRightMinEnergy = np.amin( probeFreeEnergiesSubset[:,1])
                 #r0Val = 0.2
                 #r0Val = max(0.1, estimateValueLocation(probeFreeEnergies,energyTarget)[0])
-                probeHGE= HGEFuncs.HGECoeffs( probeFreeEnergies, r0Val, nMaxValAll)
+                probeHGE= HGEFuncs.HGECoeffsInterpolate( probeFreeEnergies, r0Val, nMaxValAll)
                 probeHGE.insert(1, probeFinalEnergy)
                 probeHGE.append(probeMinEnergy)
                 probeHGE.append(probeRightMinEnergy)
+                probeHGE.append(probeFreeEnergiesSubset[0,1])
                 resSet = resSet + probeHGE
             resLine = ",".join([str(a) for a in resSet])
             noiseoutfile.write(resLine+"\n")

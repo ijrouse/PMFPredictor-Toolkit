@@ -80,7 +80,7 @@ pmfAlignEnergyDefault = 35.0
 
 #offset file: record the material, distance from the initial co-ordinates to level the uppermost atom to z=0, offset required to level to the UC(r=0.2) = 35 kJ/mol reference, position of the reference plane relative to z = 0
 offsetResultFile = open("Datasets/SurfaceOffsetData.csv","w")
-offsetResultFile.write("Material,ZeroLevelOffset[nm],FEOffset[nm],SSDRefDist[nm]\n")
+offsetResultFile.write("Material,ZeroLevelOffset[nm],FEOffset[nm],SSDRefDist[nm],MethaneOffset[nm]\n")
 
 
 
@@ -128,21 +128,30 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
             atomNumericData[:,2] = atomNumericData[:,2] - zeroLevelOffset  #zero level for the purpose of generating the potential to make sure we start "inside" the NP, this is recorded for archival purposes. At this point, z=0 is the upper layer of heavy atoms
             slabWidth = np.amax(  atomNumericData[:,2] ) - np.amin( atomNumericData[:,2])
             zUpperSurface = np.amax( atomNumericData[:,2]) 
-
-            
         newZCOM = np.sum(atomNumericData[:,2] * atomNumericData[:,4])/np.sum(atomNumericData[:,4])
-        if ssdDefType == 0: #defined relative to upper surface
-            ssdRefDist = 0
-        if ssdDefType == 1: #defined relative to upper surface but use the COM-top distance to see if this is descriptive
-            ssdRefDist = zUpperSurface  - newZCOM - slabWidth/2.0       
-        if ssdDefType == 2:  #SSD is given by the distance from a point to the COM of the slab , then subtract slabWidth/2. 
+
+
+
+
+        #if ssdDefType == 0: #defined relative to upper surface
+        #    ssdRefDist = 0
+        #if ssdDefType == 1: #reference distance is upper surface to the first layer of heavy atoms(?)
+        #    heavyAtomMass = np.amax( atomNumericData[:,4])
+        #    heavyAtomZ = np.amax(atomNumericData[ (atomNumericData[:,4] > heavyAtomMass - 1.0), 2 ])
+        #    ssdRefDist = zUpperSurface  - heavyAtomZ
+        if ssdDefType < 3:  #SSD is given by the distance from a point to the COM of the slab , then subtract slabWidth/2. 
             print( surfaceName, zUpperSurface, newZCOM, slabWidth/2.0)
-            ssdRefDist = zUpperSurface  - newZCOM - slabWidth/2.0  
+            if surfaceType == "plane":
+                ssdRefDist = zUpperSurface  - newZCOM - slabWidth/2.0  
+            else:
+                ssdRefDist = 0
         if ssdDefType == 3:
-            #this SSD type so far is applied only to graphene-like sheets and is the "centre of mass of surface atoms", which presumably includes both carbon and oxygen for go/rgo and explicitly includes only the upper layer. to automatically process this, we find the set of uppermost carbon atoms, use this to find a cutoff for the "upper layer" and compute the offset between the upper surface and the com-surface.
+            #this SSD type so far is applied only to graphene-like sheets and is the "centre of mass of surface atoms", 
+            # which seemingly only includes carbon based on the fact small molecules on GO can't penetrate past the COM expected otherwise. and explicitly includes only the upper layer. 
+            # #to automatically process this, we find the set of uppermost carbon atoms, use this to find a cutoff for the "upper layer" and compute the offset between the upper surface and the com-surface.
             zCarbonAtoms = atomNumericData[ np.logical_and(  atomNumericData[:,4] > 11 , atomNumericData[:,4] < 13 ) ] 
             zCarbonOffset = np.amax( zCarbonAtoms[:,2])
-            zSurfaceAtoms = atomNumericData[ atomNumericData[:,2] > zCarbonOffset - 0.1]
+            zSurfaceAtoms = zCarbonAtoms[zCarbonAtoms[:,2] > zCarbonOffset - 0.1]
             zSurfaceCOM = np.sum(zSurfaceAtoms[:,2] * zSurfaceAtoms[:,4])/np.sum(zSurfaceAtoms[:,4])
             ssdRefDist = zUpperSurface - zSurfaceCOM
         #print(newZCOM)
@@ -205,16 +214,17 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
     #    ssdDefType #0 = PMFs are defined relative to a flat surface, 1 = PMFs are defined using the minimum-z-distance convention, 2 = PMFs are defined relative to the COM-COM distance - half a slab width.
     #Update: type 2 is essentially type 1 as it's a flat plane, just potentially defined at a different point
     #Convention: before fitting the PMF, we subtract PMFDelta from all r values to shift into the frame of reference relative to the potential-plane.
-    
+    #type 1 may not even be used looking at the PMF metadynamics input
 
     if surfaceType == "plane":
         ssdDelta = ssdRefDist
     else:
         ssdDelta = 0
     pmfDelta = requiredOffsetFE + ssdDelta
-    offsetResultFile.write(surfaceName +","+str(zeroLevelOffset)+","   +str(requiredOffsetFE)+","+str(ssdRefDist) +"\n")    
+    #offsetResultFile.write(surfaceName +","+str(zeroLevelOffset)+","   +str(requiredOffsetFE)+","+str(ssdRefDist) +"\n")    
     np.savetxt(outputTarget, resArray, fmt='%2.7f',delimiter=",", header=feFileHeader)
     print("Completed point potentials",flush=True)
+    methaneData = [ -1 ]
     #calculate extra molecules and save them out to individual files
     for moleculeProbeDef in moleculeProbes:
         moleculeTag = moleculeProbeDef[0]
@@ -284,7 +294,56 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
             waterResArray = np.array(waterResList)
             waterResArray = waterResArray[ waterResArray[:,0] > lastWaterInfPoint ]
         waterResArray[:,2] = waterResArray[:,1] + requiredOffsetFE
+        if moleculeTag == "methane":
+            methaneData = waterResArray[:,(2,3)]
         np.savetxt(outputLoc, waterResArray, fmt='%2.7f',delimiter=",", header="r[nm],d[nm],daligned[nm],U"+moleculeTag+"(d)[kj/mol]")    
         print("Completed "+moleculeTag,flush=True)
+
+    foundPMF = 0
+    if os.path.exists("AllPMFs/"+surfaceName+"_ALASCA-AC.dat"):
+        alaPMFData = HGEFuncs.loadPMF("AllPMFs/"+surfaceName+"_ALASCA-AC.dat")
+        foundPMF = 1
+    elif os.path.exists("AllPMFs/"+surfaceName+"_ALASCA-JS.dat"):
+        alaPMFData = HGEFuncs.loadPMF("AllPMFs/"+surfaceName+"_ALASCA-JS.dat")
+        foundPMF = 1
+    else:
+        foundPMF = 0
+
+    pmfDelta = 0
+    if foundPMF == 1:
+        #found an alanine PMF so attempt to calculate the offset used for this particular set of PMFs
+        pmf = alaPMFData
+        probe = methaneData
+        #pmf = np.clip( pmf, -50,50)
+        #probe[:,1] = np.clip(probe[:,1],10,50)
+        #plt.figure()
+        #plt.plot(pmf[:,0],pmf[:,1],"b-")
+        #plt.plot(probe[:,0],probe[:,1],"r:")
+        #plt.xlim(0,1.5)
+        #plt.ylim( min(np.amin(pmf[:,1]), np.amin(probe[:,1])) -1 , np.amax(pmf[:,1]))
+        pmfMaxLoc = pmf[ np.argmax(pmf[:,1]) ,0]
+        probeMaxLoc = probe[ np.argmin( ( probe[:,1] - np.amax(pmf[:,1]) )**2    ), 0]
+        probeShift = pmfMaxLoc - probeMaxLoc
+        #plt.plot( probe[:,0] + probeShift, probe[:,1], "kx")
+        #bestDelta = 0
+        #bestKL = 10e20
+        #bestPotential = probe
+        #for delta in np.arange(-0.1,0.1,0.05):
+        #    shiftedProbePotential = np.stack(( pmf[:,0],  np.interp( pmf[:,0]  , probe[:,0] + delta, probe[:,1]  )),axis= -1)
+        #    shiftedKL =  PotentialProbes.klPotentialDivergence(pmf, shiftedProbePotential, kbTVal=10)
+        #    #shiftedKL = np.sum( (pmf[:,1] - shiftedProbePotential[:,1])**2 )
+        #    print(delta,shiftedKL)
+        #    if shiftedKL < bestKL:
+        #        bestDelta = delta
+        #        bestPotential = shiftedProbePotential
+        #        bestKL = shiftedKL
+        #    #plt.plot(shiftedProbePotential[:,0],shiftedProbePotential[:,1],"k:")
+        #plt.plot( bestPotential[:,0],bestPotential[:,1],"rx")
+        print(surfaceName, probeShift)
+        #plt.show()
+        methaneOffset = probeShift
+    else:
+        methaneOffset = 0
+    offsetResultFile.write(surfaceName +","+str(zeroLevelOffset)+","   +str(requiredOffsetFE)+","+str(ssdRefDist) +","+str(methaneOffset)     +"\n")
     print("Completed "+surfaceName,flush=True)
 offsetResultFile.close()
