@@ -20,7 +20,7 @@ def estimateValueLocation( potential, target):
     crossingEst = (target - cEst) / mEst
     return (crossingEst,target)
 
-def BuildHGEFromCoeffs(r , coeffSet):
+def BuildHGEFromCoeffsOld(r , coeffSet,forceValid = 0):
     r0Val = coeffSet[0]
     validRegion = r > r0Val
     funcVal = np.zeros_like(r[validRegion])
@@ -28,6 +28,13 @@ def BuildHGEFromCoeffs(r , coeffSet):
         funcVal += HGEFunc(r[validRegion], r0Val, i-1) * coeffSet[i]
     return funcVal
 
+def BuildHGEFromCoeffs(r , coeffSet,forceValid = 0):
+    r0Val = coeffSet[0]
+    validRegion = r > r0Val
+    funcVal = np.zeros_like(r[validRegion])
+    for i in range(1,len(coeffSet)): #range is not inclusive at the end. thus this gets index 1 ... 20     
+        funcVal += HGEFunc(r[validRegion], r0Val, i) * coeffSet[i]
+    return funcVal
 
 def getValidRegion(potential,rmin=0.05, maxEnergy = 1e20):
     MaskStart =  np.where(  np.logical_and(  potential[:,0] >= rmin  ,np.logical_and(np.logical_and(    np.isfinite( potential[:,1] )     , potential[:,1] > -1000)  , potential[:,1] < maxEnergy     ) ))[0][0]
@@ -71,6 +78,38 @@ def HGECoeffsInterpolate( inputPotential, r0Val, nmax):
     #print(hgeCoeffRes)
     return hgeCoeffRes
     
+def HGECoeffsPMF( inputPotential, r0Val, nmax, backfill = False):
+    #r0Actual = max(np.amin(inputPotential[:,0]), r0Val)
+    r0Actual = r0Val
+    if backfill == True and inputPotential[0,0] > r0Val:
+        #Fill-in missing values to ensure the integral extends to at least r0 to get a physically meaningful expansion. we assume this region is purely repulsive and of the form a + b/r^12
+        missingSection = np.arange( r0Val - 0.01, inputPotential[0,0], 0.01)
+        gradAtStart = (inputPotential[2,1] - inputPotential[0,1])/(inputPotential[2,0] - inputPotential[0,0])
+        missingSectionPotential = inputPotential[0,1] + 1.0/12.0 * gradAtStart * inputPotential[0,0]*(1 - ( inputPotential[0,0]/missingSection  )**12 )
+        finalInputPotential = np.concatenate( (  np.transpose(np.array([missingSection,missingSectionPotential])   ) , inputPotential  ), axis=0 )
+        print("Backfilling: ", missingSection, missingSectionPotential)
+        print("To join: ", inputPotential[:10,0], inputPotential[:10,1])
+    else:
+        finalInputPotential = inputPotential
+    potentialInterpolated = scipy.interpolate.interp1d(finalInputPotential[:,0],finalInputPotential[:,1], fill_value = (2*finalInputPotential[0,1],  0))
+    #start from  just before r0 or the second recorded point, whichever is higher and to ensure the gradients are still somewhat sensible
+    rminVal =  max( r0Actual, inputPotential[1,0])
+    rmaxVal = inputPotential[-1,0]
+    #rRange = np.arange( max( r0Actual, inputPotential[0,0]), inputPotential[-1,0], 0.000001)
+    #potentialUpscaled = potentialInterpolated(rRange)
+    
+    #inputRange = inputPotential [ np.logical_and( inputPotential[:,0] > r0Actual ,inputPotential[:,0] <= 1.5 ) ]
+    #print("Integrating over ", rRange[0] , " to ", rRange[-1])
+    hgeCoeffRes = [r0Actual]
+    for n in range(1,nmax+1):
+        integrand = lambda x: potentialInterpolated(x) * HGEFunc(x, r0Actual, n)
+        #hgeCoeff =  scipy.integrate.trapz( potentialUpscaled*HGEFunc( rRange,r0Actual, n),  rRange )
+        hgeCoeffGaussian = scipy.integrate.quadrature( integrand, rminVal, rmaxVal, maxiter=200)
+        hgeCoeffRes.append(hgeCoeffGaussian[0])
+    #print(hgeCoeffRes)
+    return hgeCoeffRes
+
+
 def loadPMF(target):
     PMFData = []
     try:

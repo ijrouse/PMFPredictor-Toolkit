@@ -78,7 +78,7 @@ for probeDef in allProbes:
         allLabels.append("Chem"+probeLabel+"ProbeC"+str(i))
     allLabels.append("Chem"+probeLabel+"ProbeEMin")
     allLabels.append("Chem"+probeLabel+"ProbeRightEMin")
-    allLabels.append("Chem"+probeLabel+"EAtR0")
+    allLabels.append("Chem"+probeLabel+"ProbeEAtR0")
 
 
 #headerSet =  [ "SurfID", "shape", "numericShape", "source",  "SurfCProbeR0" ] + CHGELabels + ["SurfKProbeR0"] + KHGELabels + ["SurfClProbeR0"] + ClHGELabels  + ["SurfWaterR0"]+ waterHGELabels

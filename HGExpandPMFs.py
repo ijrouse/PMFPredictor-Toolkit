@@ -10,13 +10,21 @@ import scipy.interpolate
 import warnings
 import HGEFuncs
 
+import argparse
 
+parser = argparse.ArgumentParser(description="Parameters for HGExpandPMFs")
+parser.add_argument("-f","--forcerecalc", type=int,default=0,help="If 1 then potential HGE coeffs are recalculated even if their table already exists")
+parser.add_argument("-i","--initial", type=int, default=0,help="Initial structure to start calculating for multiprocessing")
+parser.add_argument("-s","--step", type=int, default=1,help="Stride for slicing for multiprocessing")
+parser.add_argument("-o","--overrideoffset", type=int, default = 1, help = "If zero then allow coarse shifting of the PMF")
+parser.add_argument("-n","--numreplicas", type=int,default = 1, help="Number of noise variants to produce")
+args = parser.parse_args()
 
 warnings.filterwarnings('ignore')
 
-numReplicas = 5
-overrideOffset = 1
-randomDownsample = 1
+numReplicas = args.numreplicas
+overrideOffset =  args.overrideoffset
+randomDownsample = 0
 
 noiseStr = ""
 if overrideOffset == 1:
@@ -37,20 +45,21 @@ print(targetSet)
 #targetSet = [ "AllPMFsRegularised/Ag100_AFUC.dat","AllPMFsRegularised/Ag100_ALASCA.dat","AllPMFsRegularised/AuFCC100_ALASCA.dat"]
 seenMaterials = []
 
+os.makedirs("Datasets/PMFHGE",exist_ok=True)
+
 #define parameters for the fitting
 nMaxValAll = 20
-r0ValAll = 0.25
 maximumEnergy = 400
 maxR0 = 1.0
 minR0 = 0.05
 
-pmfOutputFile = open("Datasets/PMFCoefficientsDiffs-ManualN"+str(numReplicas)+noiseStr+"-aug15.csv","w")
+pmfOutputFile = open("Datasets/PMFCoefficientsDiffsN"+str(numReplicas)+noiseStr+"-sep30.csv","w")
 
-hgeLabels = ["Material","Chemical","TargetE0", "fittedE0","offset","resolution", "r0"] + [ "A"+str(i) for i in range(1,nMaxValAll+1)] + ["NMaxBest", "BestError" ] + ["rEMin", "EMin"] +  [ "D"+str(i) for i in range(1,nMaxValAll+1)]
+hgeLabels = ["Material","Chemical","TargetE0", "fittedE0","PMFMethaneOffset","resolution", "r0"] + [ "A"+str(i) for i in range(1,nMaxValAll+1)] + ["NMaxBest", "BestError" ] + ["rEMin", "EMin"] #+  [ "D"+str(i) for i in range(1,nMaxValAll+1)]
 pmfOutputFile.write( ",".join(hgeLabels) + "\n")
 
 offsetDict = {}
-offsetDictFile = open("Datasets/SurfaceOffsetDataFEDists.csv","r")
+offsetDictFile = open("Datasets/SurfaceOffsetData.csv","r")
 methaneFEDict = {}
 methaneFEDict["default"] =  np.genfromtxt("SurfacePotentials/AuFCC100_methanefe.dat",delimiter=",")
 
@@ -61,13 +70,29 @@ for line in offsetDictFileLines:
         firstline = 1
         continue
     lineParts =  line.strip().split(",")
-    offsetDict[lineParts[0]] = float(lineParts[3]) 
+    offsetDict[lineParts[0]] = float(lineParts[4]) 
 offsetDictFile.close()
 
 
-for target in targetSet:
+for target in targetSet[args.initial::args.step]:
     #plt.figure()
+
+
+
     material,chemical = target.split("/")[-1].split(".")[0].split("_")  
+
+    surfaceRecordFile = "Datasets/PMFHGE/"+material+"_"+chemical+"-noise-"+str(numReplicas)+ ".csv"
+    if os.path.exists(surfaceRecordFile) and args.forcerecalc == 0:
+        print("File for ", target, "already exists and force recalce = 0, skipping",flush=True)
+        precalcFile = open(surfaceRecordFile,"r")
+        precalcFile.readline()
+        for resLine in precalcFile:
+            pmfOutputFile.write(resLine)
+        precalcFile.close()
+        continue
+    surfaceOutfile=open(surfaceRecordFile,"w")
+    surfaceOutfile.write( ",".join([str(a) for a in hgeLabels]) +"\n")
+
     if material in methaneFEDict:
         methaneData = methaneFEDict[material]
     else:
@@ -82,7 +107,7 @@ for target in targetSet:
         materialOffsetData = offsetDict[material]
         materialOffsetVal = materialOffsetData
         if material not in seenMaterials:
-            print("Offset data found for", material, "using offset", materialOffsetVal)
+            print("Offset data found for", material, "recording offset", materialOffsetVal)
     else:
         if material not in seenMaterials:
             print("No offset data found for", material, "assuming 0. Please re-run GenerateSurfacePotentials.py")
@@ -110,11 +135,10 @@ for target in targetSet:
         print("Failed to read PMF")
         continue
     #PMFData[:,1] = PMFData[:,1] - PMFData[-1,1]
+    offsetApplied = 0
     if overrideOffset == 0:
-        PMFData[:,0] = PMFData[:,0] + materialOffsetVal #offset such that ideally the interesting parts of the PMF are in the 0.2 - 1.0 zone
-        offsetApplied = materialOffsetVal
-    else:
-        offsetApplied = 0
+        PMFData[:,0] = PMFData[:,0] - materialOffsetVal#offset such that ideally the interesting parts of the PMF are in the 0.2 - 1.0 zone
+        offsetApplied = - materialOffsetVal 
     #plt.plot(PMFData[:,0],PMFData[:,1], "bx")
     #discard PMF with extremely high energies
     #print(PMFData[0])
@@ -133,7 +157,10 @@ for target in targetSet:
         foundMinima = 0
         for r0Val in r0ValRange:
             if numReplicas > 1:
+                randomOffset = (np.random.random() - 0.5)*0.2 #map x~U[0,1] to x~[-0.5,0.5] to x~[-0.1,0.1]
                 PMFData =    HGEFuncs.applyNoise(PMFDataOriginal.copy(), 0.01, 0.01, 0.1)
+                PMFData[:,0] = PMFData[:,0]  + randomOffset
+                totalOffsetApplied = offsetApplied + randomOffset
                 if randomDownsample == 1:
                     initialResolution = np.mean(PMFData[2:,0] - PMFData[:-2,0])
                     downsampleWidth = np.random.randint(2,11)
@@ -149,6 +176,7 @@ for target in targetSet:
                     #print( "Initial res", initialResolution , "Downsample width: ", downsampleWidth, " new resolution: ", np.mean(PMFData[2:,0] - PMFData[:-2,0]) )
             else:
                 PMFData = PMFDataOriginal.copy()
+                totalOffsetApplied = offsetApplied
             if r0Val < PMFData[0,0]:
                 continue
             closeRangeCutoff = (PMFData[PMFData[:,1] < maximumEnergy ,0])[0]
@@ -158,7 +186,7 @@ for target in targetSet:
             #PMFData[:,0] = PMFData[:,0] + np.random.uniform( -0.02,0.02) 
             #PMFData[:,1] = PMFData[:,1]  * np.random.uniform( 1-0.1,1+0.1) + np.random.uniform( -0.1,0.1, len(PMFData))
             PMFData[:,1] = PMFData[:,1] - PMFData[-1,1]
-            pmfSubsetMask = PMFData[:,0] >= r0Val 
+            pmfSubsetMask = PMFData[:,0] > r0Val 
             pmfSubset = PMFData[   pmfSubsetMask  ]
             #print(pmfSubset)
             #if r0Val < closeRangeCutoff:
@@ -175,7 +203,8 @@ for target in targetSet:
             #    foundMinima = 1
             #    print("attempting to fit inside a minima, stopping")
             #    break
-            hgeSet = HGEFuncs.HGECoeffs(  PMFData, r0Val, nMaxValAll)
+            #print("Starting fit at: ", pmfSubset[0])
+            hgeSet = HGEFuncs.HGECoeffsPMF(  PMFData, r0Val, nMaxValAll) #the full PMF data is needed here to help with overflow 
             #methaneHGE = HGEFuncs.HGECoeffs( methaneData[:,(2,3)] , r0Val, nMaxValAll)
             #differentialCoeffs = []
             #for i in range(1,nMaxValAll+1):
@@ -193,14 +222,17 @@ for target in targetSet:
                     #print( pmfVar , "beats", currentBestVar, "at index", i)
                     currentBestMaxIndex = i
                     currentBestVar = pmfVar
-            resLine = [material,chemical, pmfSubset[0,1] , HGEFuncs.BuildHGEFromCoeffs(pmfSubset[0,0]  , hgeSet,1)[0], offsetApplied,resolution ] + hgeSet  + [currentBestMaxIndex, currentBestVar] + [rEMinVal, EMinVal] 
+            #print(hgeSet)
+            #print(pmfSubset[0,0], HGEFuncs.BuildHGEFromCoeffs(pmfSubset[0,0]  , hgeSet,1)[0], pmfSubset[0,1])
+            outputOffset = totalOffsetApplied + materialOffsetVal
+            resLine = [material,chemical, pmfSubset[0,1] , HGEFuncs.BuildHGEFromCoeffs(pmfSubset[0,0]  , hgeSet,1)[0], outputOffset,resolution ] + hgeSet  + [currentBestMaxIndex, currentBestVar] + [rEMinVal, EMinVal] 
             #fitData= BuildHGEFromCoeffs(pmfSubset[:,0]  , hgeSet,1)
             if pmfSubset[0,1] < maximumEnergy:
                 #plt.plot(pmfSubset[:,0],fitData)
                 #print(resLine)
                 
                 pmfOutputFile.write( ",".join([str(a) for a in resLine])+"\n")
-        
+                surfaceOutfile.write( ",".join([str(a) for a in resLine])+"\n")
 pmfOutputFile.close()
 
 

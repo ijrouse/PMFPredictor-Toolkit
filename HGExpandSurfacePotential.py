@@ -104,7 +104,7 @@ for probeDef in allProbes:
         allLabels.append("Surf"+probeLabel+"ProbeC"+str(i))
     allLabels.append("Surf"+probeLabel+"ProbeEMin")
     allLabels.append("Surf"+probeLabel+"ProbeRightEMin")    
-    allLabels.append("Surf"+probeLabel+"EAtR0")  
+    allLabels.append("Surf"+probeLabel+"ProbeEAtR0")  
 #headerSet =  [ "SurfID", "shape", "numericShape", "source",  "SurfCProbeR0" ] + CHGELabels + ["SurfKProbeR0"] + KHGELabels + ["SurfClProbeR0"] + ClHGELabels  + ["SurfWaterR0"]+ waterHGELabels
 headerSet = [ "SurfID", "shape", "numericShape", "source","ssdType" ,"SurfAlignDist","SSDRefDist","MethaneOffset"] + allLabels
 outfile.write( ",".join([str(a) for a in headerSet]) +"\n")
