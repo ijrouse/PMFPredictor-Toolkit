@@ -201,7 +201,7 @@ parser.add_argument("-s","--splittype",type=int,default=0,help="Zero: use simple
 
 args = parser.parse_args()
 
-filetag = "PMFPredictor-sep15"
+filetag = "PMFPredictor-oct05"
 
 if args.splittype==0:
     filetag = filetag+"-simplesplit"
@@ -217,8 +217,9 @@ else:
     filetag = filetag+"-dev"
 basedir = "models"
 workingDir = basedir+"/"+filetag
-
-datasetAll= pd.read_csv("Datasets/TrainingData-r0matched-sep15.csv")
+print("Loading dataset, please be patient")
+datasetAll= pd.read_csv("Datasets/TrainingData-r0matched-oct03.csv")
+print("Dataset loaded")
 #datasetAll = datasetAll.head(1000)
 
 #datasetExtra= pd.read_csv("Datasets/TrainingData_PMFn9xCombon2-r0matched-aug02-negativeE0-partial.csv")
@@ -233,6 +234,8 @@ numDeconvResidCorrections =8
 
 
 datasetAll['pmfname'] = datasetAll['Material'] + "_" + datasetAll['Chemical']
+#datasetAll["ssdType"] = 0
+#datasetAll["SSDRefDist"] = 0
 
 numChemClusters = 15
 
@@ -306,7 +309,7 @@ shutil.copyfile(localName, workingDir+"/"+localName)
 
 
 #IMPORTANT: r0 has to remain the first variable for the slicing later on to work correctly.
-pmfVars = ["r0",  "SurfAlignDist", "SSDRefDist", "source", "numericShape","resolution"]
+pmfVars = ["r0",  "SurfAlignDist", "SSDRefDist", "MethaneOffset", "PMFMethaneOffset",   "source", "numericShape","resolution"]
 ssdVar = ["ssdType"]
 
 #coeffOrders = [  1,2,3,4,5,6,7,8,9 ,10,11,12 ,13,14,15,16 ]
@@ -327,10 +330,14 @@ coeffNormR0Matrix = []
 
 potentialEMins = []
 overrideCoeffNorm = False
+potentialEAtR0s = []
+
+
 for potModel in potentialModels:
     #chosenCoeffs.append( potModel+"R0")
     potentialEMins.append(potModel+"EMin")
     potentialEMins.append(potModel+"RightEMin")
+    potentialEAtR0s.append(potModel+"EAtR0")
     for coeffNum in coeffOrders:
         chosenCoeffs.append(potModel+"C"+str(coeffNum))
         if overrideCoeffNorm == True:
@@ -339,7 +346,7 @@ for potModel in potentialModels:
             chosenCoeffsNorm.append(potModel+"C"+str(coeffNum)) 
         coeffNormR0Matrix.append("r0")
 
-numericVars = chosenCoeffs +potentialEMins+ ["EMin", "rEMin" , "fittedE0"]
+numericVars = chosenCoeffs +potentialEMins+ potentialEAtR0s + ["EMin", "rEMin" , "fittedE0"]
 aaVarSet = pmfVars + ssdVar + numericVars
 aaPresetIn =keras.Input( shape=(len(aaVarSet),))
 
@@ -366,7 +373,7 @@ if allowMixing == 0:
     #Find the set of materials present in the training set and get their canonical coefficients
     uniqueMaterials = dataset['Material'].unique().tolist()
     #print(dataset)
-    canonicalMaterialSet =   pd.read_csv("Datasets/SurfacePotentialCoefficients-sep15.csv")
+    canonicalMaterialSet =   pd.read_csv("Datasets/SurfacePotentialCoefficients-sep27.csv")
     canonicalMaterialSet["R0Dist"] = np.sqrt( (canonicalMaterialSet["SurfCProbeR0"] - 0.2 )**2 ) 
     canonicalMaterialSet.sort_values( by=["R0Dist"] ,ascending=True, inplace=True)
     canonicalMaterialSet.drop_duplicates( subset=['SurfID'] , inplace=True,keep='first')
@@ -501,7 +508,8 @@ eminNormalizer.adapt( np.array(train_dataset["EMin"]))
 e0Normalizer = layers.Normalization(axis=None)
 e0Normalizer.adapt( np.array(train_dataset["fittedE0"]))
 
-
+potentialEAtR0Normalizer = layers.Normalization()
+potentialEAtR0Normalizer.adapt( np.array(train_dataset[potentialEAtR0s]) )
 
 
 
@@ -647,7 +655,26 @@ ssdoffsetNorm.adapt( np.array(train_dataset["SSDRefDist"]))
 ssdoffsetVarLayer = ssdoffsetNorm(ssdoffsetVarLayer)
 ssdoffsetVarLayer = layers.GaussianNoise(0.2)(ssdoffsetVarLayer)
 
-pmfInputVarLayer = layers.Concatenate()([ logr0, pmfInputVarLayer,offsetVarLayer,ssdoffsetVarLayer,logres,r0Noise])
+
+methaneoffsetVarLayer = SliceLayer( aaVarSet.index("MethaneOffset"),  1)(aaPresetNorm)
+methaneoffsetNorm = layers.Normalization(axis=None)
+methaneoffsetNorm.adapt( np.array(train_dataset["MethaneOffset"]))
+methaneoffsetVarLayer = methaneoffsetNorm(methaneoffsetVarLayer)
+methaneoffsetVarLayer = layers.GaussianNoise(0.2)(methaneoffsetVarLayer)
+
+pmfmethaneoffsetVarLayer = SliceLayer( aaVarSet.index("PMFMethaneOffset"),  1)(aaPresetNorm)
+pmfmethaneoffsetNorm = layers.Normalization(axis=None)
+pmfmethaneoffsetNorm.adapt( np.array(train_dataset["PMFMethaneOffset"]))
+pmfmethaneoffsetVarLayer = pmfmethaneoffsetNorm(pmfmethaneoffsetVarLayer)
+pmfmethaneoffsetVarLayer = layers.GaussianNoise(0.2)(pmfmethaneoffsetVarLayer)
+
+
+
+#"MethaneOffset"
+
+
+
+pmfInputVarLayer = layers.Concatenate()([ logr0, pmfInputVarLayer,offsetVarLayer,ssdoffsetVarLayer,methaneoffsetVarLayer,  pmfmethaneoffsetVarLayer,  logres,r0Noise])
 print(pmfInputVarLayer)
 
 pmfInputsEncoded = layers.Dense(16)(pmfInputVarLayer)
@@ -711,8 +738,18 @@ class PCoeffSumLayer(tf.keras.layers.Layer):
 potentialCoeffsUnnormed = layers.Reshape( (numCoeffs,-1) )(potentialCoeffsOnlyInit0)
 invsqrtr0P = layers.RepeatVector(numPotentials * numCoeffs)(invsqrtr0)
 invsqrtr0P = layers.Reshape((numCoeffs,-1))(invsqrtr0P)
-potentialValsAtR0 = PCoeffSumLayer()([potentialCoeffsUnnormed,invsqrtr0P])
-potentialValsAtR0 = layers.Flatten()(potentialValsAtR0)
+#potentialValsAtR0 = PCoeffSumLayer()([potentialCoeffsUnnormed,invsqrtr0P])
+
+
+#firstPotentialEAtR0
+potentialValsAtR0 = SliceLayer( aaVarSet.index(potentialEAtR0s[0]) ,len(potentialEAtR0s) )(aaPresetNorm)
+potentialValsAtR0 = TrainableXLog()(potentialValsAtR0)
+
+#potentialValsAtR0 = potentialEAtR0Normalizer(potentialValsAtR0)
+
+
+
+#potentialValsAtR0 = layers.Flatten()(potentialValsAtR0)
 
 potentialValsAtR0 = layers.Dropout(0.2)(potentialValsAtR0)
 
@@ -1599,7 +1636,7 @@ class PlotPredictionsCallback(keras.callbacks.Callback):
 uniquedataset = dataset.copy()
 uniquedataset['ChemValidation'] = 0
 uniquedataset['MaterialValidation'] = 0
-uniquedataset["R0Dist"] = np.sqrt( (uniquedataset["r0"] - (0.2  + uniquedataset["SurfAlignDist"] ))**2 )
+uniquedataset["R0Dist"] = np.sqrt( (uniquedataset["r0"] - (0.2))**2 )
 uniquedataset["PMFName"] = uniquedataset["Material"]+"_"+uniquedataset["Chemical"]
 
 uniquedataset.sort_values( by=["R0Dist"] ,ascending=True, inplace=True)
@@ -1852,7 +1889,7 @@ def potentialKLLoss(y_true,y_pred):
     #tf.print(hgePotsPred)
     #quit()
     rmaxVal =  tf.cast(1.5, tf.float64)
-    kbTVal = tf.cast(1.0, tf.float64)
+    kbTVal = tf.cast(2.48, tf.float64)
     maxPot = tf.cast(50.0, tf.float64)
     minPot = tf.cast(-75.0, tf.float64)   
     minWeightVal = tf.cast(1e-6, tf.float64) 

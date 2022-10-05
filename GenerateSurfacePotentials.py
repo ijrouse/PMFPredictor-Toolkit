@@ -84,6 +84,7 @@ offsetResultFile.write("Material,ZeroLevelOffset[nm],FEOffset[nm],SSDRefDist[nm]
 
 
 
+
 #input data has the form
 ##ID,shape,source,ssdType
 surfaceTargetSet = np.genfromtxt("Structures/SurfaceDefinitions.csv",dtype=str,delimiter=",")
@@ -133,13 +134,13 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
 
 
 
-        #if ssdDefType == 0: #defined relative to upper surface
-        #    ssdRefDist = 0
-        #if ssdDefType == 1: #reference distance is upper surface to the first layer of heavy atoms(?)
-        #    heavyAtomMass = np.amax( atomNumericData[:,4])
-        #    heavyAtomZ = np.amax(atomNumericData[ (atomNumericData[:,4] > heavyAtomMass - 1.0), 2 ])
-        #    ssdRefDist = zUpperSurface  - heavyAtomZ
-        if ssdDefType < 3:  #SSD is given by the distance from a point to the COM of the slab , then subtract slabWidth/2. 
+        if ssdDefType == 0: #defined relative to upper surface
+            ssdRefDist = 0
+        if ssdDefType == 1: #reference distance is upper surface to the first layer of heavy atoms(?)
+            heavyAtomMass = np.amax( atomNumericData[:,4])
+            heavyAtomZ = np.amax(atomNumericData[ (atomNumericData[:,4] > heavyAtomMass - 1.0), 2 ])
+            ssdRefDist = zUpperSurface  - heavyAtomZ
+        if ssdDefType == 2:  #SSD is given by the distance from a point to the COM of the slab , then subtract slabWidth/2. 
             print( surfaceName, zUpperSurface, newZCOM, slabWidth/2.0)
             if surfaceType == "plane":
                 ssdRefDist = zUpperSurface  - newZCOM - slabWidth/2.0  
@@ -308,7 +309,17 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
         foundPMF = 1
     else:
         foundPMF = 0
-
+    targetEnergyOverride = False
+    targetEnergyOverrideVal = 50
+    #Manual overrides for generating offsets for the less believable auto-generated ones.
+    if surfaceName == "AuFCC110UCD":
+        alaPMFData = HGEFuncs.loadPMF("AllPMFs/"+"Ag110"+"_ALASCA-JS.dat")
+        foundPMF = 1
+    if surfaceName == "CdSeWurtzite2-10":
+        foundPMF = 0
+    if surfaceName == "TiO2-ana-100":
+        targetEnergyOverride = True
+        targetEnergyOverrideVal =  17.5
     pmfDelta = 0
     if foundPMF == 1:
         #found an alanine PMF so attempt to calculate the offset used for this particular set of PMFs
@@ -316,15 +327,22 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
         probe = methaneData
         #pmf = np.clip( pmf, -50,50)
         #probe[:,1] = np.clip(probe[:,1],10,50)
-        #plt.figure()
-        #plt.plot(pmf[:,0],pmf[:,1],"b-")
-        #plt.plot(probe[:,0],probe[:,1],"r:")
-        #plt.xlim(0,1.5)
-        #plt.ylim( min(np.amin(pmf[:,1]), np.amin(probe[:,1])) -1 , np.amax(pmf[:,1]))
-        pmfMaxLoc = pmf[ np.argmax(pmf[:,1]) ,0]
-        probeMaxLoc = probe[ np.argmin( ( probe[:,1] - np.amax(pmf[:,1]) )**2    ), 0]
+        plt.figure()
+        plt.plot(pmf[:,0],pmf[:,1],"b-")
+        plt.plot(probe[:,0],probe[:,1],"r:")
+        plt.xlim(0,1.5)
+        plt.ylim( min(np.amin(pmf[:,1]), np.amin(probe[:,1])) -1 , np.amax(pmf[:,1]))
+        targetEnergy = min(50, np.amax(pmf[:,1]))
+        if targetEnergyOverride == True:
+            targetEnergy = targetEnergyOverrideVal
+        alignPointIndex = (np.where( np.diff(np.sign(pmf[:,1] - targetEnergy)))[0])[0]
+        #pmfMaxLoc = pmf[ np.argmax(pmf[:,1]) ,0]
+        pmfMaxLoc =  pmf[ alignPointIndex,0]
+        #probeMaxLoc = probe[ np.argmin( ( probe[:,1] - np.amax(pmf[:,1]) )**2    ), 0]
+        probeAlignIndex = (np.where( np.diff(np.sign(probe[:,1] - targetEnergy)))[0])[0]
+        probeMaxLoc = probe[probeAlignIndex,0]
         probeShift = pmfMaxLoc - probeMaxLoc
-        #plt.plot( probe[:,0] + probeShift, probe[:,1], "kx")
+        plt.plot( probe[:,0] + probeShift, probe[:,1], "kx")
         #bestDelta = 0
         #bestKL = 10e20
         #bestPotential = probe
@@ -340,7 +358,7 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
         #    #plt.plot(shiftedProbePotential[:,0],shiftedProbePotential[:,1],"k:")
         #plt.plot( bestPotential[:,0],bestPotential[:,1],"rx")
         print(surfaceName, probeShift)
-        #plt.show()
+        plt.show()
         methaneOffset = probeShift
     else:
         methaneOffset = 0

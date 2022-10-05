@@ -45,7 +45,7 @@ surfaceCoefficientFile.close()
 
 
 
-pmfCoefficientFile = open("Datasets/PMFCoefficientsDiffs-ManualN1nooffset-aug09.csv","r")
+pmfCoefficientFile = open("Datasets/PMFCoefficientsDiffsN1nooffset-sep30.csv","r")
 pmfHeader=pmfCoefficientFile.readline().strip().split(",")
 headerSet= [pmfHeader[0]]+[pmfHeader[1]]+  surfaceHeader[1:]+chemHeader[1:]+ pmfHeader[2:]
 
@@ -58,19 +58,25 @@ fittedE0Index = headerSet.index("fittedE0")
 nmaxIndex = headerSet.index("NMaxBest")
 
 print(pmfCoefficientFileLines[-1])
-extraPMFFiles = ["Datasets/PMFCoefficientsDiffs-ManualN4nooffset_noise-aug09.csv"]
+extraPMFFiles = ["Datasets/PMFCoefficientsDiffsN4_noise-sep30.csv"]
 for extraPMFFilename in extraPMFFiles:
     extraPMFs = 0
     extraFile  = open( extraPMFFilename,"r")
     spareHeader = extraFile.readline()
-    for line in extraFile:
+    for line in extraFile: 
+        if len(line) < 5:
+            continue
+        lineterms = line.strip().split(",")
+        if len(lineterms) < 5:
+            print(line)
+            continue
         pmfCoefficientFileLines.append(line)
         extraPMFs +=1
     print("Loaded ", extraPMFs, "extra")
     extraFile.close()
 
 
-outputFile = open("Datasets/TrainingData-r0matched-sep29.csv","w")
+outputFile = open("Datasets/TrainingData-r0matched-oct03.csv","w")
 
 #print(pmfCoefficientFileLines[-1])
 print(",".join(headerSet))
@@ -79,11 +85,18 @@ outputFile.write( ",".join(headerSet) + "\n")
 knownAbsent = []
 
 #numPMFs = len(pmfCoefficientFile)
-
+failFile = open("failed.txt","w")
 for line in pmfCoefficientFileLines:
-
+    #print(line)
     lineTerms = line.strip().split(",")
-    r0Val = float(lineTerms[ 6 ])
+    if len(lineTerms) < 3:
+        continue
+    try:
+        r0Val = float(lineTerms[ 6 ])
+    except:
+        print(lineTerms[0], lineTerms[1])
+        failFile.write(line)
+        continue
     surfaceAllR0 = [ surfaceLine for surfaceLine in surfaceSet if (surfaceLine[0] == lineTerms[0] )]
     chemAllR0 = [ chemLine for chemLine in chemSet if (chemLine[0] == lineTerms[1] )] 
     #print(surfaceLine[0])
