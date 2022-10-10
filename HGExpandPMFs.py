@@ -53,7 +53,7 @@ maximumEnergy = 400
 maxR0 = 1.0
 minR0 = 0.05
 
-pmfOutputFile = open("Datasets/PMFCoefficientsDiffsN"+str(numReplicas)+noiseStr+"-sep30.csv","w")
+pmfOutputFile = open("Datasets/PMFCoefficientsDiffsN"+str(numReplicas)+noiseStr+"-oct05.csv","w")
 
 hgeLabels = ["Material","Chemical","TargetE0", "fittedE0","PMFMethaneOffset","resolution", "r0"] + [ "A"+str(i) for i in range(1,nMaxValAll+1)] + ["NMaxBest", "BestError" ] + ["rEMin", "EMin"] #+  [ "D"+str(i) for i in range(1,nMaxValAll+1)]
 pmfOutputFile.write( ",".join(hgeLabels) + "\n")
@@ -81,7 +81,7 @@ for target in targetSet[args.initial::args.step]:
 
     material,chemical = target.split("/")[-1].split(".")[0].split("_")  
 
-    surfaceRecordFile = "Datasets/PMFHGE/"+material+"_"+chemical+"-noise-"+str(numReplicas)+ ".csv"
+    surfaceRecordFile = "Datasets/PMFHGE/"+material+"_"+chemical+"-noise-"+str(numReplicas)+ noiseStr+".csv"
     if os.path.exists(surfaceRecordFile) and args.forcerecalc == 0:
         print("File for ", target, "already exists and force recalce = 0, skipping",flush=True)
         precalcFile = open(surfaceRecordFile,"r")
@@ -137,7 +137,7 @@ for target in targetSet[args.initial::args.step]:
     #PMFData[:,1] = PMFData[:,1] - PMFData[-1,1]
     offsetApplied = 0
     if overrideOffset == 0:
-        PMFData[:,0] = PMFData[:,0] - materialOffsetVal#offset such that ideally the interesting parts of the PMF are in the 0.2 - 1.0 zone
+        PMFData[:,0] = PMFData[:,0] - materialOffsetVal #first offset, if not overridden: shift the input PMF to coincide with the rigid methane potential at (usually) 50 kjMol
         offsetApplied = - materialOffsetVal 
     #plt.plot(PMFData[:,0],PMFData[:,1], "bx")
     #discard PMF with extremely high energies
@@ -157,10 +157,10 @@ for target in targetSet[args.initial::args.step]:
         foundMinima = 0
         for r0Val in r0ValRange:
             if numReplicas > 1:
-                randomOffset = (np.random.random() - 0.5)*0.2 #map x~U[0,1] to x~[-0.5,0.5] to x~[-0.1,0.1]
+                randomOffset = 0 # np.random.normal( 0, 0.1)    #(np.random.random() - 0.5)*0.2 #map x~U[0,1] to x~[-0.5,0.5] to x~[-0.1,0.1]
                 PMFData =    HGEFuncs.applyNoise(PMFDataOriginal.copy(), 0.01, 0.01, 0.1)
                 PMFData[:,0] = PMFData[:,0]  + randomOffset
-                totalOffsetApplied = offsetApplied + randomOffset
+                totalOffsetApplied = offsetApplied + randomOffset #update the total offset to include the random shift, if applied
                 if randomDownsample == 1:
                     initialResolution = np.mean(PMFData[2:,0] - PMFData[:-2,0])
                     downsampleWidth = np.random.randint(2,11)
@@ -224,7 +224,8 @@ for target in targetSet[args.initial::args.step]:
                     currentBestVar = pmfVar
             #print(hgeSet)
             #print(pmfSubset[0,0], HGEFuncs.BuildHGEFromCoeffs(pmfSubset[0,0]  , hgeSet,1)[0], pmfSubset[0,1])
-            outputOffset = totalOffsetApplied + materialOffsetVal
+            #record the offset of the coefficient expansion relative to the methane offset 
+            outputOffset = totalOffsetApplied + materialOffsetVal #With override offset enabled and no noise, this is simply the material offset val. with OO disabled and no noise, this is 0
             resLine = [material,chemical, pmfSubset[0,1] , HGEFuncs.BuildHGEFromCoeffs(pmfSubset[0,0]  , hgeSet,1)[0], outputOffset,resolution ] + hgeSet  + [currentBestMaxIndex, currentBestVar] + [rEMinVal, EMinVal] 
             #fitData= BuildHGEFromCoeffs(pmfSubset[:,0]  , hgeSet,1)
             if pmfSubset[0,1] < maximumEnergy:

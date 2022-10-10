@@ -15,6 +15,7 @@ ChemicalPotentialsOld
 models
 Datasets/ChemicalHGE
 Datasets/SurfaceHGE
+Datasets/PMFHGE
 predicted_epoch_pmfs
 Datasets/OldDatasets
 __pycache__
