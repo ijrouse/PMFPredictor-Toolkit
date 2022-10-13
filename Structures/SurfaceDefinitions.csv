@@ -27,11 +27,11 @@ TiO2-rut-100,plane,1,1
 TiO2-ana-101,plane,1,1
 Ag111,plane,2,2
 Ag110,plane,2,2
-Ag100,plane,2,2
-AlFCC100UCD,plane,3,2
-AlFCC110UCD,plane,3,2
-AlFCC111UCD,plane,3,2
-AuFCC100UCD,plane,2,2
+Ag100,plane,3,2
+AlFCC100UCD,plane,4,2
+AlFCC110UCD,plane,4,2
+AlFCC111UCD,plane,4,2
+AuFCC100UCD,plane,3,2
 AuFCC110UCD,plane,2,2
 AuFCC111UCD,plane,2,2
 AuFCC100-Ablate0,plane,1,0

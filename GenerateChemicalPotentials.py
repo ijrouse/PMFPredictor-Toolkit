@@ -216,11 +216,11 @@ for target in targetSet[args.initial::args.step]:
                 waterFreeEnergy = waterMin
             if np.isfinite(waterFreeEnergy):
                 #print(r-r0Start,waterFreeEnergy)
-                waterResList.append( [r,r-r0Start, r-r0Start, waterFreeEnergy])            
+                waterResList.append( [r,r-r0Start, r-r0Start, waterFreeEnergy,waterMin])            
             else:
                 lastWaterInfPoint = r    
         waterResArray = np.array(waterResList)
         waterResArray = waterResArray[ waterResArray[:,0] > lastWaterInfPoint ]
-        np.savetxt( outputLoc, waterResArray, fmt='%2.7f',delimiter=",", header="r[nm],d[nm],daligned[nm],U"+moleculeTag+"(d)[kj/mol]")
+        np.savetxt( outputLoc, waterResArray, fmt='%2.7f',delimiter=",", header="r[nm],d[nm],daligned[nm],U"+moleculeTag+"(d)[kj/mol],UMin"+moleculeTag+"(d)[kj/mol]")
         print("Completed "+moleculeTag,flush=True)
     print("Completed "+targetName,flush=True)

@@ -238,7 +238,8 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
             waterResArray = np.genfromtxt(outputLoc,delimiter=",")
         else:
             print("Starting", moleculeTag)
-            rRangeWater =r0Start + np.arange(r0Start - requiredOffsetFE, 1.6,  0.01 ) #usual resolution 0.01   , starting point:  r-r0Start   + requiredOffsetFE = 0 -> r = r0Start - requiredOffsetFE
+            #moleculeStartPoint = -requiredOffsetFE 
+            rRangeWater =r0Start + np.arange(-requiredOffsetFE , 1.6,  0.01 ) #usual resolution 0.01   , starting point:  r-r0Start   + requiredOffsetFE = 0 -> r = r0Start - requiredOffsetFE
             #rRangeWater = np.arange(0.1,0.3,0.005) 
             waterResList = []   
             thetaDelta = 30
@@ -287,7 +288,7 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
                     waterFreeEnergy = waterMin
                 if np.isfinite(waterFreeEnergy):
                     #print(r-r0Start,waterFreeEnergy)
-                    waterResList.append( [r,r-r0Start, r-r0Start, waterFreeEnergy])  
+                    waterResList.append( [r,r-r0Start, r-r0Start, waterFreeEnergy,waterMin])  
                     #print( r,waterFreeEnergy)          
                 else:
                     lastWaterInfPoint = r    
@@ -297,9 +298,9 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
         waterResArray[:,2] = waterResArray[:,1] + requiredOffsetFE
         if moleculeTag == "methane":
             methaneData = waterResArray[:,(2,3)]
-        np.savetxt(outputLoc, waterResArray, fmt='%2.7f',delimiter=",", header="r[nm],d[nm],daligned[nm],U"+moleculeTag+"(d)[kj/mol]")    
+        np.savetxt(outputLoc, waterResArray, fmt='%2.7f',delimiter=",", header="r[nm],d[nm],daligned[nm],U"+moleculeTag+"(d)[kj/mol],UMin"+moleculeTag+"(d)[kj/mol]")    
         print("Completed "+moleculeTag,flush=True)
-
+    plotFig = 0
     foundPMF = 0
     if os.path.exists("AllPMFs/"+surfaceName+"_ALASCA-AC.dat"):
         alaPMFData = HGEFuncs.loadPMF("AllPMFs/"+surfaceName+"_ALASCA-AC.dat")
@@ -327,11 +328,12 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
         probe = methaneData
         #pmf = np.clip( pmf, -50,50)
         #probe[:,1] = np.clip(probe[:,1],10,50)
-        plt.figure()
-        plt.plot(pmf[:,0],pmf[:,1],"b-")
-        plt.plot(probe[:,0],probe[:,1],"r:")
-        plt.xlim(0,1.5)
-        plt.ylim( min(np.amin(pmf[:,1]), np.amin(probe[:,1])) -1 , np.amax(pmf[:,1]))
+        if plotFig == 1:
+            plt.figure()
+            plt.plot(pmf[:,0],pmf[:,1],"b-")
+            plt.plot(probe[:,0],probe[:,1],"r:")
+            plt.xlim(0,1.5)
+            plt.ylim( min(np.amin(pmf[:,1]), np.amin(probe[:,1])) -1 , np.amax(pmf[:,1]))
         targetEnergy = min(50, np.amax(pmf[:,1]))
         if targetEnergyOverride == True:
             targetEnergy = targetEnergyOverrideVal
@@ -342,7 +344,8 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
         probeAlignIndex = (np.where( np.diff(np.sign(probe[:,1] - targetEnergy)))[0])[0]
         probeMaxLoc = probe[probeAlignIndex,0]
         probeShift = pmfMaxLoc - probeMaxLoc
-        plt.plot( probe[:,0] + probeShift, probe[:,1], "kx")
+        if plotFig == 1:
+            plt.plot( probe[:,0] + probeShift, probe[:,1], "kx")
         #bestDelta = 0
         #bestKL = 10e20
         #bestPotential = probe
@@ -358,7 +361,8 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
         #    #plt.plot(shiftedProbePotential[:,0],shiftedProbePotential[:,1],"k:")
         #plt.plot( bestPotential[:,0],bestPotential[:,1],"rx")
         print(surfaceName, probeShift)
-        plt.show()
+        if plotFig == 1:
+            plt.show()
         methaneOffset = probeShift
     else:
         methaneOffset = 0

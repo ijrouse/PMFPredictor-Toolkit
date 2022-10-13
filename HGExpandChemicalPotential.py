@@ -41,22 +41,24 @@ potentialFolder = "ChemicalPotentials/"
 os.makedirs(potentialFolder,exist_ok=True)
 os.makedirs("Datasets/ChemicalHGE",exist_ok=True)
 
-outfile=open("Datasets/ChemicalPotentialCoefficients-sep15.csv","w")
-noiseoutfile=open("Datasets/ChemicalPotentialCoefficientsNoise"+str(noiseReplicas)+"-sep15.csv","w")
+outfile=open("Datasets/ChemicalPotentialCoefficients-oct10.csv","w")
+noiseoutfile=open("Datasets/ChemicalPotentialCoefficientsNoise"+str(noiseReplicas)+"-oct10.csv","w")
 
 #energyTargetSet = [ 10,15,20,25, 30, 35,40]
 energyTargetSet = [25]
 energyTargetBase = 25
 
-maxR0 = 1.0
-minR0 = 0.05
-r0ValRange =  np.arange( minR0, maxR0, 0.01)
+maxR0 = 0.3
+minR0 = 0.1
+r0ValRange =  np.arange( minR0, maxR0, 0.05)
 
 
 #["methane", methaneProbe],
 #["cline", clineProbe]
 pointProbes=  [ ["C",""],    ["K",""], ["Cl",""] ,["Slab",""], ["C2A",""] ,["C4A",""]  , ["CPlus",""] , ["CMinus",""], ["CMoreLJ",""],["CLessLJ",""]  ,["CEps20",""] ,["CMin",""]    ]
-moleculeProbes = [ ["Water","waterfe"]  ,["WaterUCD","waterUCDfe"] , ["Methane","methanefe"] ,["CLine","clinefe"] ,["CarbRing","carbringfe"] ]
+
+
+moleculeProbes = [ ["Water","waterfe",3]  ,["WaterUCD","waterUCDfe",3] , ["Methane","methanefe",3] ,["CLine","clinefe",3] ,["CarbRing","carbringfe",3]  ,  ["WaterMin","waterfe",4],  ["MethaneMin","methanefe",4],["CarbRingMin","carbringfe",4]  ]
 allProbes = pointProbes + moleculeProbes
 allLabels = []
 
@@ -141,7 +143,12 @@ for material in materialSet[args.initial::args.step]:
             for probeDef in allProbes:
                 probe = probeDef[0]
                 if probeDef[1] != "":
-                    probeFreeEnergies = HGEFuncs.getValidRegion( np.copy( moleculePotentials[probeDef[0] ])[:,(2,3)])
+                    probeNumber = probeDef[2]
+                    #if probeNumber == 3:
+                    #    print("Starting FE average")
+                    #elif probeNumber == 4:
+                    #    print("Starting global min")
+                    probeFreeEnergies = HGEFuncs.getValidRegion( np.copy( moleculePotentials[probeDef[0] ])[:,(2,probeNumber)])
                 #else:
                 #if probe=="Water":
                 #    probeFreeEnergies = getValidRegion( waterFreeEnergies[:,(2,3)] )

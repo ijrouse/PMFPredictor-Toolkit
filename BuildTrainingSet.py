@@ -13,7 +13,7 @@ import random
 numReplicates = 1
 
 if numReplicates==1:
-    chemicalCoefficientFile = open("Datasets/ChemicalPotentialCoefficients-sep15.csv","r")
+    chemicalCoefficientFile = open("Datasets/ChemicalPotentialCoefficients-oct10.csv","r")
 else:
     chemicalCoefficientFile = open("Datasets/ChemicalPotentialCoefficientsNoise10.csv","r")
 chemHeader=chemicalCoefficientFile.readline().strip().split(",")
@@ -26,7 +26,7 @@ for chemLine in knownChems:
 chemicalCoefficientFile.close()
 
 if numReplicates==1:
-    surfaceCoefficientFile = open("Datasets/SurfacePotentialCoefficients-sep27.csv","r")
+    surfaceCoefficientFile = open("Datasets/SurfacePotentialCoefficients-oct12.csv","r")
 else:
     surfaceCoefficientFile = open("Datasets/SurfacePotentialCoefficientsNoise-10.csv","r")
 surfaceHeader=surfaceCoefficientFile.readline().strip().split(",")
@@ -43,9 +43,11 @@ for surfaceLine in knownSurfaces:
 surfaceCoefficientFile.close()
 
 
+#PMFCoefficients-N1_noalign-oct12.csv
+#PMFCoefficients-N4_noise-oct12.csv
 
 
-pmfCoefficientFile = open("Datasets/PMFCoefficientsDiffsN1nooffset-sep30.csv","r")
+pmfCoefficientFile = open("Datasets/PMFCoefficients-N1_noalign-oct12.csv","r")
 pmfHeader=pmfCoefficientFile.readline().strip().split(",")
 headerSet= [pmfHeader[0]]+[pmfHeader[1]]+  surfaceHeader[1:]+chemHeader[1:]+ pmfHeader[2:]
 
@@ -58,8 +60,8 @@ fittedE0Index = headerSet.index("fittedE0")
 nmaxIndex = headerSet.index("NMaxBest")
 
 print(pmfCoefficientFileLines[-1])
-extraPMFFiles = ["Datasets/PMFCoefficientsDiffsN4_noise-sep30.csv"]
-extraPMFFiles = []
+extraPMFFiles = ["Datasets/PMFCoefficients-N4_noise-oct12.csv"]
+#extraPMFFiles = []
 for extraPMFFilename in extraPMFFiles:
     extraPMFs = 0
     extraFile  = open( extraPMFFilename,"r")
@@ -77,7 +79,7 @@ for extraPMFFilename in extraPMFFiles:
     extraFile.close()
 
 
-outputFile = open("Datasets/TrainingData-r0matched-oct03-single.csv","w")
+outputFile = open("Datasets/TrainingData-oct13.csv","w")
 
 #print(pmfCoefficientFileLines[-1])
 print(",".join(headerSet))
@@ -85,7 +87,7 @@ outputFile.write( ",".join(headerSet) + "\n")
 
 knownAbsent = []
 seenPMFs = []
-pmfOnceOnly = 1
+pmfOnceOnly = 0
 
 #numPMFs = len(pmfCoefficientFile)
 failFile = open("failed.txt","w")
@@ -114,7 +116,8 @@ for line in pmfCoefficientFileLines:
         #if i % 100 == 0:
         #    print(i, "/", numPMFs)
         if 1==1:
-            surfaceChoices = [ surfaceLine for surfaceLine in surfaceAllR0 if   (float(surfaceLine[8]) - r0Val)**2 < (0.01)**2 ]
+            surfaceTargetR0 = 0.2
+            surfaceChoices = [ surfaceLine for surfaceLine in surfaceAllR0 if   (float(surfaceLine[8]) - surfaceTargetR0)**2 < (0.01)**2 ]
             #surfaceData = surfaceDict[lineTerms[0]]
             #print(lineTerms[0], len(surfaceChoices) )
             if len(surfaceChoices) == 0:
@@ -124,7 +127,8 @@ for line in pmfCoefficientFileLines:
                     knownAbsent.append(lineTerms[0])
                 continue
             surfaceData = random.choice(surfaceChoices)
-            chemChoices = [ chemLine for chemLine in chemAllR0 if (  (float(chemLine[2]) - r0Val)**2 < (0.01)**2             )]
+            chemTargetR0 = 0.2
+            chemChoices = [ chemLine for chemLine in chemAllR0 if (  (float(chemLine[2]) - chemTargetR0)**2 < (0.01)**2             )]
             if len(chemChoices) == 0:
                 if not lineTerms[1] in knownAbsent:
                     print("Nothing found for ", lineTerms[1])

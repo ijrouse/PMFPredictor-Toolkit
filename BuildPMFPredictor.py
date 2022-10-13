@@ -201,7 +201,7 @@ parser.add_argument("-s","--splittype",type=int,default=0,help="Zero: use simple
 
 args = parser.parse_args()
 
-filetag = "PMFPredictor-oct05"
+filetag = "PMFPredictor-oct13"
 
 if args.splittype==0:
     filetag = filetag+"-simplesplit"
@@ -218,7 +218,7 @@ else:
 basedir = "models"
 workingDir = basedir+"/"+filetag
 print("Loading dataset, please be patient")
-datasetAll= pd.read_csv("Datasets/TrainingData-r0matched-oct03.csv")
+datasetAll= pd.read_csv("Datasets/TrainingData-oct13.csv")
 print("Dataset loaded")
 #datasetAll = datasetAll.head(1000)
 
@@ -263,20 +263,35 @@ thirdReduction = len(datasetAll)
 print("Initial: ", initialSamples, " absolute filter: ", firstReduction, "relative filter", secondReduction, "E0 max", thirdReduction)
 
 
-suspiciousPMFs= [
- ["AuFCC100UCD","TRPSCA-JS"],
- ["AuFCC100UCD","PHESCA-JS"],
- ["AuFCC110UCD","ALASCA-JS"],
-  ["AuFCC110UCD","CYSSCA-JS"],
- ["Ag100","GLUSCA-JS"],
- ["Ag100","TYRSCA-JS"]
- ]
+suspiciousPMFs=[
+["AuFCC100UCD","AFUC-JS"],
+["Ag100","GLUSCA-JS"],
+["Ag100","TYRSCA-JS"],
+["Ag100","BGLCNA-JS"],
+["Ag110","ASPPSCA-JS"],
+["Ag110","LYSSCA-JS"],
+["Ag110","THRSCA-JS"],
+["AuFCC110UCD","ALASCA-JS"],
+["AuFCC110UCD","CYSSCA-JS"],
+["AuFCC110UCD","LYSSCA-JS"],
+["AuFCC100UCD","PHESCA-JS"],
+["AuFCC100UCD","TRPSCA-JS"],
+["AuFCC110UCD","HIESCA-JS"],
+["AuFCC110UCD","MAMM"],
+["Ag110","MAMM"],
+["AuFCC110UCD","ETA"]
+]
 for pmfToDrop in suspiciousPMFs:
     datasetAll = datasetAll.drop(  datasetAll[   (datasetAll["Material"] == pmfToDrop[0] )   &  (datasetAll["Chemical"] == pmfToDrop[1] )      ].index   )
 
 
 
-datasetAll = datasetAll.drop( datasetAll[datasetAll["source"]==3].index )
+datasetAll.loc[ (datasetAll["Material"] == "AlFCC100UCD") | (datasetAll["Material"] == "AlFCC110UCD")  | (datasetAll["Material"] == "AlFCC111UCD")   ,"source" ] = 4
+datasetAll.loc[ (datasetAll["Material"] == "Ag100") | (datasetAll["Material"] == "AuFCC100UCD")   ,"source" ] = 3
+
+
+
+datasetAll = datasetAll.drop( datasetAll[datasetAll["source"]==4].index )
 
 
 
@@ -318,8 +333,8 @@ nMaxOrder = 20
 coeffOrders = range(1,nMaxOrder+1)
 
 #SurfCProbe must remain the first entry here as its used to define the initial state of output potential
-surfacePotentialModels =  ["SurfCProbe", "SurfKProbe", "SurfClProbe", "SurfWaterFullProbe",    "SurfC2AProbe",  "SurfC4AProbe", "SurfMethaneProbe", "SurfCarbonRingProbe", "SurfCPlusProbe", "SurfCMinusProbe" , "SurfCMinProbe" ,"SurfCLine3Probe"]
-chemicalPotentialModels = ["ChemCProbe", "ChemKProbe", "ChemClProbe",  "ChemWaterUCDProbe",    "ChemC2AProbe", "ChemSlabProbe", "ChemMethaneProbe", "ChemCLineProbe" ,"ChemCPlusProbe","ChemCMinusProbe", "ChemCEps20Probe", "ChemCMinProbe", "ChemCarbRingProbe"]
+surfacePotentialModels =  ["SurfCProbe", "SurfKProbe", "SurfClProbe", "SurfWaterFullProbe",    "SurfC2AProbe",  "SurfC4AProbe", "SurfMethaneProbe", "SurfCarbonRingProbe", "SurfCPlusProbe", "SurfCMinusProbe" , "SurfCMinProbe" ,"SurfCLine3Probe", "SurfWaterFullMinProbe", "SurfCarbonRingMinProbe", "SurfMethaneMinProbe"]
+chemicalPotentialModels = ["ChemCProbe", "ChemKProbe", "ChemClProbe",  "ChemWaterUCDProbe",    "ChemC2AProbe", "ChemSlabProbe", "ChemMethaneProbe", "ChemCLineProbe" ,"ChemCPlusProbe","ChemCMinusProbe", "ChemCEps20Probe", "ChemCMinProbe", "ChemCarbRingProbe", "ChemWaterMinProbe", "ChemCarbRingMinProbe"]
 potentialModels = surfacePotentialModels + chemicalPotentialModels
 numCoeffs = len(coeffOrders)
 numPotentials = len(potentialModels)
@@ -336,7 +351,7 @@ potentialEAtR0s = []
 for potModel in potentialModels:
     #chosenCoeffs.append( potModel+"R0")
     potentialEMins.append(potModel+"EMin")
-    potentialEMins.append(potModel+"RightEMin")
+    #potentialEMins.append(potModel+"RightEMin")
     potentialEAtR0s.append(potModel+"EAtR0")
     for coeffNum in coeffOrders:
         chosenCoeffs.append(potModel+"C"+str(coeffNum))
@@ -373,7 +388,7 @@ if allowMixing == 0:
     #Find the set of materials present in the training set and get their canonical coefficients
     uniqueMaterials = dataset['Material'].unique().tolist()
     #print(dataset)
-    canonicalMaterialSet =   pd.read_csv("Datasets/SurfacePotentialCoefficients-sep27.csv")
+    canonicalMaterialSet =   pd.read_csv("Datasets/SurfacePotentialCoefficients-oct12.csv")
     canonicalMaterialSet["R0Dist"] = np.sqrt( (canonicalMaterialSet["SurfCProbeR0"] - 0.2 )**2 ) 
     canonicalMaterialSet.sort_values( by=["R0Dist"] ,ascending=True, inplace=True)
     canonicalMaterialSet.drop_duplicates( subset=['SurfID'] , inplace=True,keep='first')
@@ -394,7 +409,7 @@ if allowMixing == 0:
     print(trainingMaterialSet[chosenClusterCoeffs].values)
     agglomCluster.fit( skpreproc.normalize( trainingMaterialSet[chosenClusterCoeffs].values)) 
     clusterLabels =  agglomCluster.labels_
-    fixedMaterials = ["AuFCC100", "AuFCC100UCD"]
+    fixedMaterials = ["AuFCC100", "AuFCC100UCD","AuFCC111UCD"]
     
     
     clustersOutputFile=open(workingDir+"/clusterout.txt","w")
@@ -411,7 +426,7 @@ if allowMixing == 0:
     
     fixedSMILES = ["C","Cc1c[nH]c2ccccc12"]
     uniqueChemicals = dataset['Chemical'].unique().tolist()
-    canonicalChemicalSet = pd.read_csv("Datasets/ChemicalPotentialCoefficients-sep15.csv")
+    canonicalChemicalSet = pd.read_csv("Datasets/ChemicalPotentialCoefficients-oct10.csv")
 
     canonicalChemicalSet["R0Dist"] = np.sqrt( (canonicalChemicalSet["ChemCProbeR0"] - 0.2 )**2 ) 
     canonicalChemicalSet.sort_values( by=["R0Dist"] ,ascending=True, inplace=True)
@@ -1541,7 +1556,7 @@ logdir="logs"
 
 
 tensorboard_callback = keras.callbacks.TensorBoard(log_dir=workingDir+"-tblog",histogram_freq=5)
-lrReduceCallbackL = tf.keras.callbacks.ReduceLROnPlateau(monitor="loss",factor=0.5,patience=10,verbose=0,cooldown=20, min_lr = 1e-6, min_delta =0.01 )
+lrReduceCallbackL = tf.keras.callbacks.ReduceLROnPlateau(monitor="loss",factor=0.5,patience=5,verbose=0,cooldown=20, min_lr = 1e-6, min_delta =0.01 )
 initial_learning_rate = 0.1
 decay_steps = 1.0
 decay_rate = 0.5
@@ -1636,10 +1651,19 @@ class PlotPredictionsCallback(keras.callbacks.Callback):
 uniquedataset = dataset.copy()
 uniquedataset['ChemValidation'] = 0
 uniquedataset['MaterialValidation'] = 0
-uniquedataset["R0Dist"] = np.sqrt( (uniquedataset["r0"] - (0.2))**2 )
+
+uniquedataset.drop( uniquedataset[( uniquedataset["fittedE0"] ) > 25].index )
+#"MethaneOffset", "PMFMethaneOffset"
+uniquedataset["OffsetFromOriginal"] =  np.sqrt( (uniquedataset["PMFMethaneOffset"] -  uniquedataset["MethaneOffset"] )**2 )
+
+uniquedataset.sort_values( by=["OffsetFromOriginal","r0"] ,ascending=True, inplace=True)
+
+
+
+
+#uniquedataset["R0Dist"] = np.sqrt( (uniquedataset["r0"] - (0.2))**2 )
 uniquedataset["PMFName"] = uniquedataset["Material"]+"_"+uniquedataset["Chemical"]
 
-uniquedataset.sort_values( by=["R0Dist"] ,ascending=True, inplace=True)
     
 if allowMixing == 0:
     uniquedataset.drop_duplicates( subset=['PMFName'] , inplace=True,keep='first')
@@ -1990,7 +2014,7 @@ for i in range(numOutputVars):
     if i < 20:
         scaleVal = np.std(trainingOutput[:,i] )
         huberLossSet.append(  scaledMSE(scaleVal)  )
-        lossWeightList.append( 0.001)
+        lossWeightList.append( 0.01)
     else:
         huberLossSet.append(  scaledMSE( np.std(trainingOutput[:,i] ) ) )
         lossWeightList.append(1.0)
@@ -2176,7 +2200,7 @@ if convToOutput == 1:
 #all callbacks:
 #[reduce_lr,savePredCallback,checkpointCallback ,checkpointCallbackTrain, tensorboard_callback, csv_logger,plotPredCallback,csv_loggerLocal] 
 print("Starting: " , filetag )
-reduce_lr = keras.callbacks.ReduceLROnPlateau(monitor='loss', factor=0.5, patience=5, min_lr=1e-6, cooldown=10, min_delta = 1)
+reduce_lr = keras.callbacks.ReduceLROnPlateau(monitor='loss', factor=0.5, patience=5, min_lr=1e-6, cooldown=10, min_delta = 2)
 with tf.device('/cpu:0'):
     ann_model.compile( optimizer = tf.optimizers.Adam(learning_rate=7e-4, epsilon=1e-3 ), loss=[huberLossSet, potentialKLLoss],   loss_weights=lossWeights, metrics=[
         tf.keras.metrics.RootMeanSquaredError() ] )

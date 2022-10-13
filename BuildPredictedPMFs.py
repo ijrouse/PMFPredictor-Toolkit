@@ -13,27 +13,61 @@ from tensorflow.keras.utils import plot_model
 import scipy.special as scspec
 import datetime
 import HGEFuncs
+import argparse
+
+parser = argparse.ArgumentParser(description="Parameters for BuildPredictedPMFs")
+parser.add_argument("-m","--match", type=int,default=0, help="If zero, use default parameters for SSD, source, methane offset. Else use predefined.")
+args = parser.parse_args()
 
 
+matchSource = False
+if args.match!=0:
+    matchSource = True
 
 #datasetAll= pd.read_csv("HGE16-MaterialChemicalCoefficientDescriptors_R0E0_may26.csv")
 
 #Prepare the set of surfaces and chemicals
 targetMolecules = pd.read_csv("Datasets/ChemicalPotentialCoefficients-sep15.csv")
-targetSurfaces = pd.read_csv("Datasets/SurfacePotentialCoefficients-sep15.csv")
+targetSurfaces = pd.read_csv("Datasets/SurfacePotentialCoefficients-sep27.csv")
 r0TargetVal = 0.2
-kbTVal = 1
-matchSource = True
-
+kbTVal = 2.48
+energyTarget = 35
 
 #targetMolecules["CR0Dist"] = np.sqrt( (targetMolecules["ChemCProbeR0"] - r0TargetVal  )**2 )
 #targetMolecules.sort_values( by=["CR0Dist"] ,ascending=True, inplace=True)
 #targetMolecules.drop_duplicates( subset=['ChemID'] , inplace=True,keep='first')
 
+#set the target r0 value to the point at which the methane potential is closest to the target energy
+# np.array( [np.sqrt(2*i - 1) for i in range(1,1+numCoeffs) ] )
+#targetSurfaces["EMethaneAtr0"] = 0
+#for i in range(1,11):
+#    targetSurfaces["EMethaneAtr0"] += targetSurfaces["SurfMethaneProbeC"+str(i)] * np.sqrt(2 * i - 1)
+#targetSurfaces["EMethaneAtr0"] = targetSurfaces["EMethaneAtr0"] /np.sqrt(  targetSurfaces["SurfMethaneProbeR0"])
+#print(targetSurfaces["EMethaneAtr0"].head(20))
+#targetSurfaces = targetSurfaces.drop( targetSurfaces[  targetSurfaces["EMethaneAtr0"] > energyTarget    ].index   )
+#print(targetSurfaces)
+#targetSurfaces["EMethaneDistance"] =  np.sqrt( (targetSurfaces["EMethaneAtr0"] - energyTarget)**2 )
+
+#"ChemMethaneProbeEAtR0"
+#targetSurfaces["SurfR0Dist"] =  np.sqrt( (targetSurfaces["SurfMethaneProbeR0"] - r0TargetVal)**2 )
+
+
+#Select the lowest value of r0 for each surface with an energy less than the target. 
+targetSurfaces["SurfMethaneProbeEAtR0"] - energyTarget
+targetSurfaces=targetSurfaces.drop(targetSurfaces[ targetSurfaces["SurfMethaneProbeEAtR0"] > energyTarget   ].index   )
+targetSurfaces.sort_values( by=["SurfMethaneProbeR0"] ,ascending=True, inplace=True)
+targetSurfaces.drop_duplicates( subset=['SurfID'] , inplace=True,keep='first')
+targetSurfaces["targetR0"] = targetSurfaces["SurfMethaneProbeR0"]
+print(targetSurfaces["SurfMethaneProbeEAtR0"])
+'''
 #Generate a dataframe of surfaces at their "natural" R0 values
-targetSurfaces["SR0Dist"] = np.sqrt( (targetSurfaces["SurfCProbeR0"] - (r0TargetVal + targetSurfaces["SurfAlignDist"])  )**2 )
+targetSurfaces["SR0Dist"] = np.sqrt( (targetSurfaces["SurfCProbeR0"] - targetSurfaces["targetR0"] )**2 )
 targetSurfaces.sort_values( by=["SR0Dist"] ,ascending=True, inplace=True)
 targetSurfaces.drop_duplicates( subset=['SurfID'] , inplace=True,keep='first')
+'''
+print(targetSurfaces)
+
+
 uniqueMaterials = targetSurfaces['SurfID'].unique().tolist()
 
 #minNeededR0 = np.amin( targetSurfaces["SR0Dist"].to_numpy() ) + r0TargetVal
@@ -43,7 +77,7 @@ datasubsets = []
 for uniqueMaterial in uniqueMaterials:
     print(uniqueMaterial)
     targetSurface = targetSurfaces[ targetSurfaces[ "SurfID"] == uniqueMaterial].head(1)
-    chemR0Target =  ((r0TargetVal + targetSurface["SurfAlignDist"]).to_numpy())[0]
+    chemR0Target =  (( targetSurface["targetR0"]).to_numpy())[0]
     moleculeWorking = targetMolecules.copy()
     moleculeWorking["CR0Dist"] = np.sqrt( (moleculeWorking["ChemCProbeR0"] - (chemR0Target )  )**2 ) 
     moleculeWorking.sort_values( by=["CR0Dist"] ,ascending=True, inplace=True)
@@ -54,7 +88,7 @@ for uniqueMaterial in uniqueMaterials:
 combinedDataset = pd.concat(datasubsets)
 print(combinedDataset)
 combinedDataset.to_csv("testout.csv")
-quit()
+
 '''
 combinedDataset = pd.merge(targetMolecules,targetSurfaces,how="cross")
 combinedDataset["CR0Dist"] = np.sqrt( (targetMolecules["ChemCProbeR0"] - (r0TargetVal + targetSurfaces["SurfAlignDist"])  )**2 ) 
@@ -65,7 +99,10 @@ combinedDataset.drop_duplicates( subset=['PMFName'], inplace=True,keep='first')
 #Add in default values for the extra 
 if matchSource == False:
     combinedDataset['source'] = 1
-combinedDataset["r0"] = r0TargetVal + combinedDataset["SurfAlignDist"]
+    combinedDataset["ssdType"] = 0
+    combinedDataset["MethaneOffset"] = 0
+    combinedDataset["PMFMethaneOffset"] = 0
+combinedDataset["r0"] = combinedDataset["targetR0"] #+ combinedDataset["SurfAlignDist"]
 combinedDataset["resolution"] = 0.005
 #These parameters are unused in prediction mode so can be set to arbitrary values.
 #If changing these does change predictions, this is a bug and should be reported.
@@ -85,10 +122,11 @@ def potentialKLLoss(y_true,y_pred):
 
 
 outputVarset = ["A1","A2","A3","A4","A5","A6","A7","A8","A9","A10","A11","A12","A13","A14","A15","A16", "A17","A18","A19","A20" ,"e0predict","Emin","e0predictfrompmf"]
-targetModels = ["PMFPredictor-sep09-simplesplit-bootstrapped-ensemble1","PMFPredictor-sep09-simplesplit-bootstrapped-ensemble2","PMFPredictor-sep09-simplesplit-bootstrapped-ensemble3"]
+targetModels = ["PMFPredictor-oct03-simplesplit-ensemble1"]#,"PMFPredictor-sep15-simplesplit-bootstrapped-ensemble2","PMFPredictor-sep15-simplesplit-bootstrapped-ensemble3","PMFPredictor-sep15-simplesplit-bootstrapped-ensemble4","PMFPredictor-sep15-simplesplit-bootstrapped-ensemble5"]
 for targetModel in targetModels:
     for materialName in uniqueMaterials:
         os.makedirs( "predicted_pmfs/"+targetModel+"/"+materialName,exist_ok=True)
+    print("Beginning predictions for model "+targetModel, flush=True)
     varsetFile = open("models/"+targetModel+"/varset.txt","r")
     aaVarSet = varsetFile.readline().strip().split(",")
     varsetFile.close()
@@ -115,29 +153,10 @@ for targetModel in targetModels:
         
 
 
-def loadPMF(target):
-    PMFData = []
-    try:
-        pmfText = open(target , "r")
-        for line in pmfText:
-            if line[0] == "#":
-                continue
-            if "," in line:
-                lineTerms = line.strip().split(",")
-            else:
-                lineTerms = line.split()
-            PMFData.append([float(lineTerms[0]),float(lineTerms[1])])
-        pmfText.close()
-        foundPMF = 1
-        print("Loaded ", target)
-        PMFData = np.array(PMFData)
-        PMFData[:,1] = PMFData[:,1] - PMFData[-1,1] #set to 0 at end of PMF
-        return PMFData
-    except: 
-        return [-1]
+
                
 #Next build composites and plot figures
-
+print("Averaging PMFs",flush=True)
 outputFig = plt.figure()
 for index,row in combinedDataset.iterrows():
     plt.clf()
@@ -167,7 +186,7 @@ for index,row in combinedDataset.iterrows():
 
     plt.plot(finalPMF[:,0],finalPMF[:,1],'b-')
     plt.plot(finalPMFLog[:,0],finalPMFLog[:,1],'r-')
-    knownPMF = loadPMF("AllPMFs/"+materialName+"_"+chemName+".dat")
+    knownPMF = HGEFuncs.loadPMF("AllPMFs/"+materialName+"_"+chemName+".dat")
     if len(knownPMF) > 2:
         plt.plot( knownPMF[:,0], knownPMF[:,1], 'g-')
     plt.xlabel("r [nm]")

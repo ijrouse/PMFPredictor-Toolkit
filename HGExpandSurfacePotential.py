@@ -32,9 +32,9 @@ nMaxValAll = 20
 r0ValC = 0.2
 
 
-maxR0 = 1.0
-minR0 = 0.05
-r0ValRange =  np.arange( minR0, maxR0, 0.01)
+maxR0 = 0.30
+minR0 = 0.15
+r0ValRange =  np.arange( minR0, maxR0, 0.05)
 
 noiseReplicas = 1
 potentialFolder = "SurfacePotentials/"
@@ -42,8 +42,8 @@ potentialFolder = "SurfacePotentials/"
 os.makedirs(potentialFolder,exist_ok=True)
 os.makedirs("Datasets/SurfaceHGE",exist_ok=True)
 
-outfile=open("Datasets/SurfacePotentialCoefficients-sep27.csv","w")
-noiseoutfile=open("Datasets/SurfacePotentialCoefficientsNoise-"+str(noiseReplicas)+"-sep15.csv","w")
+outfile=open("Datasets/SurfacePotentialCoefficients-oct12.csv","w")
+noiseoutfile=open("Datasets/SurfacePotentialCoefficientsNoise-"+str(noiseReplicas)+"-oct12.csv","w")
 ljHGELabels = []
 electroHGELabels = []
 waterHGELabels = []
@@ -70,7 +70,7 @@ energyTargetBase = 25
 #energyTargetSet = [5, 10,15,20,25, 30, 35,40]
 energyTargetSet = [25]
 pointProbes = [ ["C",""] ,  ["K",""], ["Cl",""] ,["C2A",""],["C4A",""] ,["CPlus",""],["CMinus",""],["CMoreLJ",""],["CLessLJ",""] ,["CMin",""], ["CPlusMin",""],["CMinusMin",""]]
-moleculeProbes = [ ["Methane","methanefe"]   ,["WaterFull","waterUCDfe"] ,["CarbonRing","carbringfe"], ["CLine3","cline3fe"]]
+moleculeProbes = [ ["Methane","methanefe",3]   ,["WaterFull","waterUCDfe",3] ,["CarbonRing","carbringfe",3], ["CLine3","cline3fe",3],["MethaneMin","methanefe",4]   ,["WaterFullMin","waterUCDfe",4] ,["CarbonRingMin","carbringfe",4]]
 
 allProbes = moleculeProbes + pointProbes
 allLabels = []
@@ -173,7 +173,8 @@ for material in materialSet[args.initial::args.step]:
                 for probeDef in allProbes:
                     probe = probeDef[0]
                     if probeDef[1] != "":
-                        probeFreeEnergies = HGEFuncs.getValidRegion(   np.copy( moleculePotentials[probeDef[0]] )[:,(2,3)] )
+                        probeNumber = probeDef[2]
+                        probeFreeEnergies = HGEFuncs.getValidRegion(   np.copy( moleculePotentials[probeDef[0]] )[:,(2,probeNumber)] )
                         #probeFreeEnergies = getValidRegion( waterFreeEnergies[:,(2,3)] )
                     #elif probe=="Methane":
                     #    probeFreeEnergies = getValidRegion( methaneFreeEnergies[:,(2,3)])
