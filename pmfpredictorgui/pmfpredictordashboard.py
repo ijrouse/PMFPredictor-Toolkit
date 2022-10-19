@@ -28,7 +28,7 @@ class Ui_MainWindow(object):
             MainWindow.setObjectName(u"MainWindow")
         MainWindow.resize(899, 932)
         icon = QIcon()
-        icon.addFile(u"pmfp_256.ico", QSize(), QIcon.Normal, QIcon.Off)
+        icon.addFile(u"pmfp.ico", QSize(), QIcon.Normal, QIcon.Off)
         MainWindow.setWindowIcon(icon)
         self.actionClose = QAction(MainWindow)
         self.actionClose.setObjectName(u"actionClose")
@@ -99,6 +99,7 @@ class Ui_MainWindow(object):
         self.gridLayout_2.addWidget(self.label_12, 4, 0, 1, 1)
 
         self.cb_npSource = QComboBox(self.tab_2)
+        self.cb_npSource.addItem("")
         self.cb_npSource.addItem("")
         self.cb_npSource.addItem("")
         self.cb_npSource.addItem("")
@@ -188,17 +189,45 @@ class Ui_MainWindow(object):
         self.tab.setObjectName(u"tab")
         self.gridLayout_3 = QGridLayout(self.tab)
         self.gridLayout_3.setObjectName(u"gridLayout_3")
-        self.label_10 = QLabel(self.tab)
-        self.label_10.setObjectName(u"label_10")
-
-        self.gridLayout_3.addWidget(self.label_10, 0, 0, 1, 1)
-
         self.gridLayout = QGridLayout()
         self.gridLayout.setObjectName(u"gridLayout")
-        self.label = QLabel(self.tab)
-        self.label.setObjectName(u"label")
+        self.button_runGenChemPot = QPushButton(self.tab)
+        self.button_runGenChemPot.setObjectName(u"button_runGenChemPot")
 
-        self.gridLayout.addWidget(self.label, 0, 0, 1, 1)
+        self.gridLayout.addWidget(self.button_runGenChemPot, 2, 2, 2, 1)
+
+        self.label_6 = QLabel(self.tab)
+        self.label_6.setObjectName(u"label_6")
+
+        self.gridLayout.addWidget(self.label_6, 10, 0, 1, 1)
+
+        self.b_refreshHGChem = QCheckBox(self.tab)
+        self.b_refreshHGChem.setObjectName(u"b_refreshHGChem")
+        self.b_refreshHGChem.setChecked(False)
+
+        self.gridLayout.addWidget(self.b_refreshHGChem, 7, 1, 1, 1)
+
+        self.label_3 = QLabel(self.tab)
+        self.label_3.setObjectName(u"label_3")
+
+        self.gridLayout.addWidget(self.label_3, 4, 0, 1, 1)
+
+        self.line = QFrame(self.tab)
+        self.line.setObjectName(u"line")
+        self.line.setFrameShape(QFrame.HLine)
+        self.line.setFrameShadow(QFrame.Sunken)
+
+        self.gridLayout.addWidget(self.line, 1, 0, 1, 3)
+
+        self.button_runHGESurf = QPushButton(self.tab)
+        self.button_runHGESurf.setObjectName(u"button_runHGESurf")
+
+        self.gridLayout.addWidget(self.button_runHGESurf, 8, 2, 1, 1)
+
+        self.b_refreshChemPot = QCheckBox(self.tab)
+        self.b_refreshChemPot.setObjectName(u"b_refreshChemPot")
+
+        self.gridLayout.addWidget(self.b_refreshChemPot, 3, 1, 1, 1)
 
         self.b_scanChem = QCheckBox(self.tab)
         self.b_scanChem.setObjectName(u"b_scanChem")
@@ -212,43 +241,6 @@ class Ui_MainWindow(object):
 
         self.gridLayout.addWidget(self.button_runAC, 0, 2, 1, 1)
 
-        self.line = QFrame(self.tab)
-        self.line.setObjectName(u"line")
-        self.line.setFrameShape(QFrame.HLine)
-        self.line.setFrameShadow(QFrame.Sunken)
-
-        self.gridLayout.addWidget(self.line, 1, 0, 1, 3)
-
-        self.label_2 = QLabel(self.tab)
-        self.label_2.setObjectName(u"label_2")
-
-        self.gridLayout.addWidget(self.label_2, 2, 0, 2, 1)
-
-        self.button_runGenChemPot = QPushButton(self.tab)
-        self.button_runGenChemPot.setObjectName(u"button_runGenChemPot")
-
-        self.gridLayout.addWidget(self.button_runGenChemPot, 2, 2, 2, 1)
-
-        self.b_refreshChemPot = QCheckBox(self.tab)
-        self.b_refreshChemPot.setObjectName(u"b_refreshChemPot")
-
-        self.gridLayout.addWidget(self.b_refreshChemPot, 3, 1, 1, 1)
-
-        self.label_3 = QLabel(self.tab)
-        self.label_3.setObjectName(u"label_3")
-
-        self.gridLayout.addWidget(self.label_3, 4, 0, 1, 1)
-
-        self.b_refreshSurfPot = QCheckBox(self.tab)
-        self.b_refreshSurfPot.setObjectName(u"b_refreshSurfPot")
-
-        self.gridLayout.addWidget(self.b_refreshSurfPot, 4, 1, 1, 1)
-
-        self.button_runGenSurfPot = QPushButton(self.tab)
-        self.button_runGenSurfPot.setObjectName(u"button_runGenSurfPot")
-
-        self.gridLayout.addWidget(self.button_runGenSurfPot, 4, 2, 1, 1)
-
         self.line_2 = QFrame(self.tab)
         self.line_2.setObjectName(u"line_2")
         self.line_2.setFrameShape(QFrame.HLine)
@@ -261,32 +253,26 @@ class Ui_MainWindow(object):
 
         self.gridLayout.addWidget(self.label_4, 6, 0, 2, 1)
 
-        self.button_runHGEChem = QPushButton(self.tab)
-        self.button_runHGEChem.setObjectName(u"button_runHGEChem")
-
-        self.gridLayout.addWidget(self.button_runHGEChem, 6, 2, 2, 1)
-
-        self.b_refreshHGChem = QCheckBox(self.tab)
-        self.b_refreshHGChem.setObjectName(u"b_refreshHGChem")
-        self.b_refreshHGChem.setChecked(True)
-
-        self.gridLayout.addWidget(self.b_refreshHGChem, 7, 1, 1, 1)
-
         self.label_5 = QLabel(self.tab)
         self.label_5.setObjectName(u"label_5")
 
         self.gridLayout.addWidget(self.label_5, 8, 0, 1, 1)
 
+        self.button_runPredict = QPushButton(self.tab)
+        self.button_runPredict.setObjectName(u"button_runPredict")
+
+        self.gridLayout.addWidget(self.button_runPredict, 10, 2, 1, 1)
+
         self.b_refreshHGSurf = QCheckBox(self.tab)
         self.b_refreshHGSurf.setObjectName(u"b_refreshHGSurf")
-        self.b_refreshHGSurf.setChecked(True)
+        self.b_refreshHGSurf.setChecked(False)
 
         self.gridLayout.addWidget(self.b_refreshHGSurf, 8, 1, 1, 1)
 
-        self.button_runHGESurf = QPushButton(self.tab)
-        self.button_runHGESurf.setObjectName(u"button_runHGESurf")
+        self.label = QLabel(self.tab)
+        self.label.setObjectName(u"label")
 
-        self.gridLayout.addWidget(self.button_runHGESurf, 8, 2, 1, 1)
+        self.gridLayout.addWidget(self.label, 0, 0, 1, 1)
 
         self.line_3 = QFrame(self.tab)
         self.line_3.setObjectName(u"line_3")
@@ -295,18 +281,39 @@ class Ui_MainWindow(object):
 
         self.gridLayout.addWidget(self.line_3, 9, 0, 1, 3)
 
-        self.label_6 = QLabel(self.tab)
-        self.label_6.setObjectName(u"label_6")
+        self.button_runGenSurfPot = QPushButton(self.tab)
+        self.button_runGenSurfPot.setObjectName(u"button_runGenSurfPot")
 
-        self.gridLayout.addWidget(self.label_6, 10, 0, 1, 1)
+        self.gridLayout.addWidget(self.button_runGenSurfPot, 4, 2, 1, 1)
 
-        self.button_runPredict = QPushButton(self.tab)
-        self.button_runPredict.setObjectName(u"button_runPredict")
+        self.b_refreshSurfPot = QCheckBox(self.tab)
+        self.b_refreshSurfPot.setObjectName(u"b_refreshSurfPot")
 
-        self.gridLayout.addWidget(self.button_runPredict, 10, 2, 1, 1)
+        self.gridLayout.addWidget(self.b_refreshSurfPot, 4, 1, 1, 1)
+
+        self.button_runHGEChem = QPushButton(self.tab)
+        self.button_runHGEChem.setObjectName(u"button_runHGEChem")
+
+        self.gridLayout.addWidget(self.button_runHGEChem, 6, 2, 2, 1)
+
+        self.label_2 = QLabel(self.tab)
+        self.label_2.setObjectName(u"label_2")
+
+        self.gridLayout.addWidget(self.label_2, 2, 0, 2, 1)
+
+        self.b_standardisePMF = QCheckBox(self.tab)
+        self.b_standardisePMF.setObjectName(u"b_standardisePMF")
+        self.b_standardisePMF.setChecked(True)
+
+        self.gridLayout.addWidget(self.b_standardisePMF, 10, 1, 1, 1)
 
 
         self.gridLayout_3.addLayout(self.gridLayout, 1, 0, 1, 1)
+
+        self.label_10 = QLabel(self.tab)
+        self.label_10.setObjectName(u"label_10")
+
+        self.gridLayout_3.addWidget(self.label_10, 0, 0, 1, 1)
 
         self.tabWidget.addTab(self.tab, "")
         self.tab_3 = QWidget()
@@ -369,7 +376,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
 
-        self.tabWidget.setCurrentIndex(0)
+        self.tabWidget.setCurrentIndex(1)
 
 
         QMetaObject.connectSlotsByName(MainWindow)
@@ -391,8 +398,9 @@ class Ui_MainWindow(object):
 
         self.label_12.setText(QCoreApplication.translate("MainWindow", u"Source", None))
         self.cb_npSource.setItemText(0, QCoreApplication.translate("MainWindow", u"SU (ions)", None))
-        self.cb_npSource.setItemText(1, QCoreApplication.translate("MainWindow", u"UCD", None))
+        self.cb_npSource.setItemText(1, QCoreApplication.translate("MainWindow", u"UCD (110/111)", None))
         self.cb_npSource.setItemText(2, QCoreApplication.translate("MainWindow", u"SU (no ions)", None))
+        self.cb_npSource.setItemText(3, QCoreApplication.translate("MainWindow", u"UCD (100)", None))
 
         self.label_13.setText(QCoreApplication.translate("MainWindow", u"SSD type", None))
         self.cb_npSSD.setItemText(0, QCoreApplication.translate("MainWindow", u"Fixed surface", None))
@@ -410,24 +418,25 @@ class Ui_MainWindow(object):
         self.button_buildNP.setText(QCoreApplication.translate("MainWindow", u"Add Surface", None))
         self.button_addChem.setText(QCoreApplication.translate("MainWindow", u"Add Chemical", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), QCoreApplication.translate("MainWindow", u"Structures", None))
-        self.label_10.setText(QCoreApplication.translate("MainWindow", u"<html><head/><body><p><span style=\" font-size:20pt; font-weight:600;\">PMF Predictor Scripts</span></p></body></html>", None))
-        self.label.setText(QCoreApplication.translate("MainWindow", u"Generate missing chemical structures", None))
+        self.button_runGenChemPot.setText(QCoreApplication.translate("MainWindow", u"Run", None))
+        self.label_6.setText(QCoreApplication.translate("MainWindow", u"Generate PMFs", None))
+        self.b_refreshHGChem.setText(QCoreApplication.translate("MainWindow", u"Refresh?", None))
+        self.label_3.setText(QCoreApplication.translate("MainWindow", u"Generate surface potentials", None))
+        self.button_runHGESurf.setText(QCoreApplication.translate("MainWindow", u"Run", None))
+        self.b_refreshChemPot.setText(QCoreApplication.translate("MainWindow", u"Refresh?", None))
         self.b_scanChem.setText(QCoreApplication.translate("MainWindow", u"Scan", None))
         self.button_runAC.setText(QCoreApplication.translate("MainWindow", u"Run", None))
-        self.label_2.setText(QCoreApplication.translate("MainWindow", u"Generate chemical potentials", None))
-        self.button_runGenChemPot.setText(QCoreApplication.translate("MainWindow", u"Run", None))
-        self.b_refreshChemPot.setText(QCoreApplication.translate("MainWindow", u"Refresh?", None))
-        self.label_3.setText(QCoreApplication.translate("MainWindow", u"Generate surface potentials", None))
-        self.b_refreshSurfPot.setText(QCoreApplication.translate("MainWindow", u"Refresh?", None))
-        self.button_runGenSurfPot.setText(QCoreApplication.translate("MainWindow", u"Run", None))
         self.label_4.setText(QCoreApplication.translate("MainWindow", u"Generate chemical potential expansions", None))
-        self.button_runHGEChem.setText(QCoreApplication.translate("MainWindow", u"Run", None))
-        self.b_refreshHGChem.setText(QCoreApplication.translate("MainWindow", u"Refresh?", None))
         self.label_5.setText(QCoreApplication.translate("MainWindow", u"Generate surface potential expansions", None))
-        self.b_refreshHGSurf.setText(QCoreApplication.translate("MainWindow", u"Refresh?", None))
-        self.button_runHGESurf.setText(QCoreApplication.translate("MainWindow", u"Run", None))
-        self.label_6.setText(QCoreApplication.translate("MainWindow", u"Generate PMFs", None))
         self.button_runPredict.setText(QCoreApplication.translate("MainWindow", u"Run", None))
+        self.b_refreshHGSurf.setText(QCoreApplication.translate("MainWindow", u"Refresh?", None))
+        self.label.setText(QCoreApplication.translate("MainWindow", u"Generate missing chemical structures", None))
+        self.button_runGenSurfPot.setText(QCoreApplication.translate("MainWindow", u"Run", None))
+        self.b_refreshSurfPot.setText(QCoreApplication.translate("MainWindow", u"Refresh?", None))
+        self.button_runHGEChem.setText(QCoreApplication.translate("MainWindow", u"Run", None))
+        self.label_2.setText(QCoreApplication.translate("MainWindow", u"Generate chemical potentials", None))
+        self.b_standardisePMF.setText(QCoreApplication.translate("MainWindow", u"Standardise?", None))
+        self.label_10.setText(QCoreApplication.translate("MainWindow", u"<html><head/><body><p><span style=\" font-size:20pt; font-weight:600;\">PMF Predictor Scripts</span></p></body></html>", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), QCoreApplication.translate("MainWindow", u"Scripts", None))
         self.label_19.setText(QCoreApplication.translate("MainWindow", u"Scripts should usually be run starting from the top and working downwards, as this means everything is calculated in order.", None))
         self.label_20.setText(QCoreApplication.translate("MainWindow", u"Unless you have a very good reason to change them, the check boxes should be left alone.", None))
