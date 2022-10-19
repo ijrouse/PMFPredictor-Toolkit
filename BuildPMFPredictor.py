@@ -745,8 +745,11 @@ class PCoeffSumLayer(tf.keras.layers.Layer):
     def __init__(self):
       super(PCoeffSumLayer, self).__init__()
       self.scale = tf.constant( np.array( [np.sqrt(2*i - 1) for i in range(1,1+numCoeffs) ] )  , dtype=tf.float32)
+      self.minInvSqrtR0 = 1.0/np.sqrt(0.2)
     def call(self, inputs):
       tiledPrefactors = tf.tile( tf.reshape( self.scale, (numCoeffs,-1)), (1,numPotentials))
+      #
+      r0Valset = tf.math.minimum( inputs[1], )
       return tf.reduce_sum( tf.math.multiply( tf.math.multiply(inputs[0] ,tiledPrefactors   ) , inputs[1]), axis=1)
       
       
@@ -758,6 +761,10 @@ invsqrtr0P = layers.Reshape((numCoeffs,-1))(invsqrtr0P)
 
 #firstPotentialEAtR0
 potentialValsAtR0 = SliceLayer( aaVarSet.index(potentialEAtR0s[0]) ,len(potentialEAtR0s) )(aaPresetNorm)
+
+
+
+
 potentialValsAtR0 = TrainableXLog()(potentialValsAtR0)
 
 #potentialValsAtR0 = potentialEAtR0Normalizer(potentialValsAtR0)
@@ -1652,7 +1659,7 @@ uniquedataset = dataset.copy()
 uniquedataset['ChemValidation'] = 0
 uniquedataset['MaterialValidation'] = 0
 
-uniquedataset.drop( uniquedataset[( uniquedataset["fittedE0"] ) > 25].index )
+uniquedataset.drop( uniquedataset[( uniquedataset["fittedE0"] ) > 25].index ,inplace=True)
 #"MethaneOffset", "PMFMethaneOffset"
 uniquedataset["OffsetFromOriginal"] =  np.sqrt( (uniquedataset["PMFMethaneOffset"] -  uniquedataset["MethaneOffset"] )**2 )
 

@@ -75,7 +75,7 @@ print("Electric to kJ/mol conversion: ",electroToKJMol)
 #this is taken to be the r = alignPointDist point and the potentials shifted accordingly.
 alignPointEnergyDefault = 35.0
 alignPointDist = 0.2
-pmfAlignEnergyDefault = 35.0
+pmfAlignEnergyDefault = 50.0
 
 
 #offset file: record the material, distance from the initial co-ordinates to level the uppermost atom to z=0, offset required to level to the UC(r=0.2) = 35 kJ/mol reference, position of the reference plane relative to z = 0
@@ -334,7 +334,7 @@ for surfaceTarget in surfaceTargetSet[args.initial::args.step] :
             plt.plot(probe[:,0],probe[:,1],"r:")
             plt.xlim(0,1.5)
             plt.ylim( min(np.amin(pmf[:,1]), np.amin(probe[:,1])) -1 , np.amax(pmf[:,1]))
-        targetEnergy = min(50, np.amax(pmf[:,1]))
+        targetEnergy = min(pmfAlignEnergyDefault, np.amax(pmf[:,1]))
         if targetEnergyOverride == True:
             targetEnergy = targetEnergyOverrideVal
         alignPointIndex = (np.where( np.diff(np.sign(pmf[:,1] - targetEnergy)))[0])[0]

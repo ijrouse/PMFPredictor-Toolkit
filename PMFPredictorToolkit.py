@@ -52,8 +52,12 @@ class MainWindow(QMainWindow):
             argSet = ["HGExpandSurfacePotential.py",argString]
         elif buttonLabel=="runPredict":
             foundScript = 1
-            argString  = ""
-            argSet = ["BuildPredictedPMFs.py",""]
+            matchParams = "0"
+            if int(extraArgs)== 0:
+                matchParams = "1"
+            
+            argString  = "-m "+matchParams
+            argSet = ["BuildPredictedPMFs.py",argString]
 
         else:
             print("Target not recognised or not implemented")
@@ -102,7 +106,7 @@ class MainWindow(QMainWindow):
             return 0
 
         shapeMap = { "Plane":"plane", "Cylinder":"cylinder"}
-        sourceMap = {"SU (no ions)":"0", "SU (ions)":"1", "UCD":"2"}
+        sourceMap = {"SU (no ions)":"0", "SU (ions)":"1", "UCD (110/111)":"2", "UCD (100)":"3"}
         ssdMap = {"Fixed surface":"0", "Min z. dist":"1", "COM - slab width":"2", "Fixed (graphene-like)":"3"}
         targetShapeString = shapeMap.get( self.ui.cb_npShape.currentText(),"plane")
         targetSourceString = sourceMap.get( self.ui.cb_npSource.currentText(), "1")
@@ -153,7 +157,7 @@ class MainWindow(QMainWindow):
         self.ui.button_runGenSurfPot.clicked.connect(lambda: self.buttonClick("runGenSurfPot",self.ui.b_refreshSurfPot.isChecked()))
         self.ui.button_runHGEChem.clicked.connect(lambda: self.buttonClick("runHGEChem",self.ui.b_refreshHGChem.isChecked()))
         self.ui.button_runHGESurf.clicked.connect(lambda: self.buttonClick("runHGESurf",self.ui.b_refreshHGSurf.isChecked()))
-        self.ui.button_runPredict.clicked.connect(lambda: self.buttonClick("runPredict"))
+        self.ui.button_runPredict.clicked.connect(lambda: self.buttonClick("runPredict"  , self.ui.b_standardisePMF.isChecked()))
         self.processHandler = QProcess(self)
         self.scriptButtonSet = [self.ui.button_runAC,self.ui.button_runGenChemPot,self.ui.button_runGenSurfPot,self.ui.button_runHGEChem,self.ui.button_runHGESurf,self.ui.button_runPredict]
         #set up the buttons for NP conversion

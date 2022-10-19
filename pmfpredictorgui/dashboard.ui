@@ -15,14 +15,14 @@
   </property>
   <property name="windowIcon">
    <iconset>
-    <normaloff>../pmfp.ico</normaloff>../pmfp.ico</iconset>
+    <normaloff>../../.designer/pmfp.ico</normaloff>../../.designer/pmfp.ico</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QFormLayout" name="formLayout">
     <item row="0" column="0" colspan="2">
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab_2">
        <attribute name="title">
@@ -119,12 +119,17 @@
               </item>
               <item>
                <property name="text">
-                <string>UCD</string>
+                <string>UCD (110/111)</string>
                </property>
               </item>
               <item>
                <property name="text">
                 <string>SU (no ions)</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>UCD (100)</string>
                </property>
               </item>
              </widget>
@@ -248,19 +253,57 @@
         <string>Scripts</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_3">
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_10">
-          <property name="text">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:20pt; font-weight:600;&quot;&gt;PMF Predictor Scripts&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-          </property>
-         </widget>
-        </item>
         <item row="1" column="0">
          <layout class="QGridLayout" name="gridLayout">
-          <item row="0" column="0">
-           <widget class="QLabel" name="label">
+          <item row="2" column="2" rowspan="2">
+           <widget class="QPushButton" name="button_runGenChemPot">
             <property name="text">
-             <string>Generate missing chemical structures</string>
+             <string>Run</string>
+            </property>
+           </widget>
+          </item>
+          <item row="10" column="0">
+           <widget class="QLabel" name="label_6">
+            <property name="text">
+             <string>Generate PMFs</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="1">
+           <widget class="QCheckBox" name="b_refreshHGChem">
+            <property name="text">
+             <string>Refresh?</string>
+            </property>
+            <property name="checked">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QLabel" name="label_3">
+            <property name="text">
+             <string>Generate surface potentials</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0" colspan="3">
+           <widget class="Line" name="line">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="2">
+           <widget class="QPushButton" name="button_runHGESurf">
+            <property name="text">
+             <string>Run</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QCheckBox" name="b_refreshChemPot">
+            <property name="text">
+             <string>Refresh?</string>
             </property>
            </widget>
           </item>
@@ -284,55 +327,6 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="0" colspan="3">
-           <widget class="Line" name="line">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0" rowspan="2">
-           <widget class="QLabel" name="label_2">
-            <property name="text">
-             <string>Generate chemical potentials</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="2" rowspan="2">
-           <widget class="QPushButton" name="button_runGenChemPot">
-            <property name="text">
-             <string>Run</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="1">
-           <widget class="QCheckBox" name="b_refreshChemPot">
-            <property name="text">
-             <string>Refresh?</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="0">
-           <widget class="QLabel" name="label_3">
-            <property name="text">
-             <string>Generate surface potentials</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="1">
-           <widget class="QCheckBox" name="b_refreshSurfPot">
-            <property name="text">
-             <string>Refresh?</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="2">
-           <widget class="QPushButton" name="button_runGenSurfPot">
-            <property name="text">
-             <string>Run</string>
-            </property>
-           </widget>
-          </item>
           <item row="5" column="0" colspan="3">
            <widget class="Line" name="line_2">
             <property name="orientation">
@@ -347,58 +341,10 @@
             </property>
            </widget>
           </item>
-          <item row="6" column="2" rowspan="2">
-           <widget class="QPushButton" name="button_runHGEChem">
-            <property name="text">
-             <string>Run</string>
-            </property>
-           </widget>
-          </item>
-          <item row="7" column="1">
-           <widget class="QCheckBox" name="b_refreshHGChem">
-            <property name="text">
-             <string>Refresh?</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
           <item row="8" column="0">
            <widget class="QLabel" name="label_5">
             <property name="text">
              <string>Generate surface potential expansions</string>
-            </property>
-           </widget>
-          </item>
-          <item row="8" column="1">
-           <widget class="QCheckBox" name="b_refreshHGSurf">
-            <property name="text">
-             <string>Refresh?</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="8" column="2">
-           <widget class="QPushButton" name="button_runHGESurf">
-            <property name="text">
-             <string>Run</string>
-            </property>
-           </widget>
-          </item>
-          <item row="9" column="0" colspan="3">
-           <widget class="Line" name="line_3">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="10" column="0">
-           <widget class="QLabel" name="label_6">
-            <property name="text">
-             <string>Generate PMFs</string>
             </property>
            </widget>
           </item>
@@ -409,7 +355,76 @@
             </property>
            </widget>
           </item>
+          <item row="8" column="1">
+           <widget class="QCheckBox" name="b_refreshHGSurf">
+            <property name="text">
+             <string>Refresh?</string>
+            </property>
+            <property name="checked">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label">
+            <property name="text">
+             <string>Generate missing chemical structures</string>
+            </property>
+           </widget>
+          </item>
+          <item row="9" column="0" colspan="3">
+           <widget class="Line" name="line_3">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="2">
+           <widget class="QPushButton" name="button_runGenSurfPot">
+            <property name="text">
+             <string>Run</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QCheckBox" name="b_refreshSurfPot">
+            <property name="text">
+             <string>Refresh?</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="2" rowspan="2">
+           <widget class="QPushButton" name="button_runHGEChem">
+            <property name="text">
+             <string>Run</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0" rowspan="2">
+           <widget class="QLabel" name="label_2">
+            <property name="text">
+             <string>Generate chemical potentials</string>
+            </property>
+           </widget>
+          </item>
+          <item row="10" column="1">
+           <widget class="QCheckBox" name="b_standardisePMF">
+            <property name="text">
+             <string>Standardise?</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
          </layout>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_10">
+          <property name="text">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:20pt; font-weight:600;&quot;&gt;PMF Predictor Scripts&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+         </widget>
         </item>
        </layout>
       </widget>
