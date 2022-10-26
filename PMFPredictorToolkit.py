@@ -118,7 +118,7 @@ class MainWindow(QMainWindow):
             self.message("Failed to create NP, please check folder location\n")
         else:
             self.message("NP structure converted, appending to SurfaceDefinitions\n")
-            newSurfString = targetName+","+targetShapeString+","+targetSourceString+","+targetSSDString
+            newSurfString = targetName+","+targetShapeString+","+targetSourceString+","+targetSSDString+",0.002"
             self.message(newSurfString)
             surfDefFile = open("Structures/SurfaceDefinitions.csv","a")
             surfDefFile.write(newSurfString+"\n")
