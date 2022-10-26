@@ -11,7 +11,7 @@ Introduction and quick start
 
 The easiest way to use this package is via the GUI, which you can run using "python3 PMFPredictorToolkit.py" or by setting it to be executable via "chmod 755 PMFPredictorToolkit.py", then "./PMFPredictorToolkit.py" .
 
-To make everything work, you'll need an up-to-date Python installation with Tensorflow installed, which should also give you NumPy and SciPy. You'll also need pandas and matplotlib for predictions, and PySide6 for running the GUI.
+To make everything work, you'll need an up-to-date Python installation with Tensorflow installed, which should also give you NumPy and SciPy. You'll also need pandas and matplotlib for predictions, and PySide6 for running the GUI. You will also need to download the model repository to get the pre-trained models for the actual prediction of PMFs.
 Generating new chemical structures requires acpype (pip3 install acpype) which in turn requires openbabel - download the source, build that with python bindings, install, then use "pip3 install openbabel" to set up all the bindings. 
 
 
@@ -36,7 +36,7 @@ Level 3: Neural network training
 BuildPMFPredictor.py: Constructs and trains the ANN used to convert HG coefficients describing the input potentials to the coefficients describing a PMF.
 
 Level 4: PMF output
-PredictPMFs.py: Generates PMFs for all surface/chemical pairs using the model trained in Level 3.
+BuildPredictedPMFs.py: Generates PMFs for all surface/chemical pairs using the model trained in Level 3.
 
 ===========
 Source? SSD type?
@@ -50,8 +50,8 @@ The "source" variable for a surface defines whether it should be treated as a St
 ===========
 AN IMPORTANT NOTE ON TRAINING/VALIDATION/TEST splits
 ===========
-All PMFS in either "AllPMFsRegularised" or "AllPMFS" are considered fair game for model development - the scripts used to generate the datasets are greedy and will read these in if they are present. Thus, anything which should be kept for sight-unseen testing should not be added to this folder. As a failsafe, the script skips these if either the surface or chemical are not registered in the definitions files.
-The training/validation splits used to optimise parameters/hyperparameters are generated based on a cluster analysis to try to ensure the training set contains as wide a variety as possible.
+All PMFS in "AllPMFS" are considered fair game for model development - the scripts used to generate the datasets are greedy and will read these in if they are present. Thus, anything which should be kept for sight-unseen testing should not be added to this folder. As a failsafe, the script skips these if either the surface or chemical are not registered in the definitions files.
+The training/validation splits used to optimise parameters/hyperparameters are generated based on a cluster analysis to try to ensure the training set contains as wide a variety as possible. For generation of PMFs, the bootstrap ensemble is used which uses a simple random split such that all surfaces and chemicals feature in the training set for a given model.
 
 
 ===========

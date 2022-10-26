@@ -110,7 +110,7 @@ def HGECoeffsPMF( inputPotential, r0Val, nmax, backfill = False):
     return hgeCoeffRes
 
 
-def loadPMF(target):
+def loadPMF(target , verbose=True):
     PMFData = []
     try:
         pmfText = open(target , "r")
@@ -124,7 +124,8 @@ def loadPMF(target):
             PMFData.append([float(lineTerms[0]),float(lineTerms[1])])
         pmfText.close()
         foundPMF = 1
-        print("Loaded ", target)
+        if verbose==True:
+            print("Loaded ", target)
         PMFData = np.array(PMFData)
         PMFData[:,1] = PMFData[:,1] - PMFData[-1,1] #set to 0 at end of PMF
         return PMFData

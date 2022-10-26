@@ -34,6 +34,16 @@ r0TargetVal = 0.2
 kbTVal = 2.48
 energyTarget = 100
 
+materialResolutionDict = {}
+surfaceDefFile = open("Structures/SurfaceDefinitions.csv","r")
+for line in surfaceDefFile:
+    if line[0] == "#":
+        continue
+    lineTerms = line.split(",")
+    materialResolutionDict[ lineTerms[0] ] = float(lineTerms[4])
+surfaceDefFile.close()
+
+
 #targetMolecules["CR0Dist"] = np.sqrt( (targetMolecules["ChemCProbeR0"] - r0TargetVal  )**2 )
 #targetMolecules.sort_values( by=["CR0Dist"] ,ascending=True, inplace=True)
 #targetMolecules.drop_duplicates( subset=['ChemID'] , inplace=True,keep='first')
@@ -66,6 +76,7 @@ else:
     targetSurfaces["surfaceR0Dist"] = np.sqrt( (targetSurfaces["SurfMethaneProbeR0"]-targetSurfaces["targetR0"])**2)
     targetSurfaces.sort_values( by=["surfaceR0Dist"] ,ascending=True, inplace=True)
     targetSurfaces.drop_duplicates( subset=['SurfID'] , inplace=True,keep='first')
+    targetSurfaces["resolution"] = targetSurfaces['SurfID'].replace(materialResolutionDict)
 '''
 #Generate a dataframe of surfaces at their "natural" R0 values
 targetSurfaces["SR0Dist"] = np.sqrt( (targetSurfaces["SurfCProbeR0"] - targetSurfaces["targetR0"] )**2 )
@@ -98,17 +109,22 @@ combinedDataset.to_csv("testout.csv")
 
 
 #Add in default values for the parameters used to help compensate for PMF differences during training
+#unless we're specifically trying to match the training data
 if matchSource == False:
     combinedDataset['source'] = 1
     combinedDataset["ssdType"] = 0
     combinedDataset["SSDRefDist"] = 0
     combinedDataset["MethaneOffset"] = 0
     combinedDataset["PMFMethaneOffset"] = 0
-else:
+    combinedDataset["r0"] = combinedDataset["targetR0"]
+    combinedDataset["resolution"] = 0.002
+else: 
     combinedDataset["PMFMethaneOffset"] = combinedDataset["MethaneOffset"]
     combinedDataset['source'] = combinedDataset['source'].clip( 0, 3)  
-combinedDataset["r0"] = combinedDataset["targetR0"] #+ combinedDataset["SurfAlignDist"]
-combinedDataset["resolution"] = 0.005
+    combinedDataset["r0"] = combinedDataset["targetR0"] + combinedDataset["MethaneOffset"]
+    combinedDataset["r0"] = combinedDataset["r0"].clip(0.1,1)
+
+
 #These parameters are unused in prediction mode so can be set to arbitrary values.
 #If changing these does change predictions, this is a bug and should be reported.
 combinedDataset["EMin"] = -1
@@ -152,22 +168,49 @@ UnitedAtomNames = {
  "PHO-AC":"PHO",
  "CHL-AC":"CHL",
  "DGL-AC":"DGL",
- "EST-AC":"EST"
+ "EST-AC":"EST",
+ "CYMSCA-AC":"CYM",
+ "GANSCA-AC":"GAN"
 }
 
 
 outputVarset = ["A1","A2","A3","A4","A5","A6","A7","A8","A9","A10","A11","A12","A13","A14","A15","A16", "A17","A18","A19","A20" ,"e0predict","Emin","e0predictfrompmf"]
-targetModels = [
+
+
+targetModelsCluster = [
+"PMFPredictor-oct13-clustersplit-ensemble1",
+"PMFPredictor-oct13-clustersplit-ensemble2",
+"PMFPredictor-oct13-clustersplit-ensemble5"
+]
+
+targetModelsBootstrap = [
 "PMFPredictor-oct13-simplesplit-bootstrapped-ensemble1",
 "PMFPredictor-oct13-simplesplit-bootstrapped-ensemble2",
 "PMFPredictor-oct13-simplesplit-bootstrapped-ensemble3",
 "PMFPredictor-oct13-simplesplit-bootstrapped-ensemble4",
-"PMFPredictor-oct13-simplesplit-bootstrapped-ensemble5"
+"PMFPredictor-oct13-simplesplit-bootstrapped-ensemble5",
+"PMFPredictor-oct13-simplesplit-bootstrapped-ensemble6",
+"PMFPredictor-oct13-simplesplit-bootstrapped-ensemble7",
+"PMFPredictor-oct13-simplesplit-bootstrapped-ensemble8",
+"PMFPredictor-oct13-simplesplit-bootstrapped-ensemble9",
+"PMFPredictor-oct13-simplesplit-bootstrapped-ensemble10"
 ]
 
+targetModels = targetModelsBootstrap
+
+generatedPMFs = []
+for index,row in combinedDataset.iterrows():
+    materialName = row["SurfID"]
+    chemName = row["ChemID"]
+    r0Actual = float(row["r0"])
+    generatedPMFs.append( [materialName,chemName, r0Actual])
+
+
+#generatedPMFs = (combinedDataset["SurfID"] + "_" + combinedDataset["ChemID"]).tolist()
+resString = ""
 
 for targetModel in targetModels:
-    modelString = targetModel+matchString
+    modelString = targetModel+matchString+resString
     for materialName in uniqueMaterials:
         os.makedirs( "predicted_pmfs/"+modelString+"/"+materialName,exist_ok=True)
     print("Beginning predictions for model "+targetModel, flush=True)
@@ -175,48 +218,63 @@ for targetModel in targetModels:
     aaVarSet = varsetFile.readline().strip().split(",")
     varsetFile.close()
     loadedModel = tf.keras.models.load_model("models/"+targetModel+"/checkpoints/checkpoint-train"    , custom_objects={ 'loss': scaledMSE(1) ,'aaVarSet':aaVarSet, 'potentialKLLoss':potentialKLLoss },compile=False)
+    print("Model loaded", flush=True)
     modelPredictOut = loadedModel.predict(  [ combinedDataset[aaVarSet]   ]   )
     predictionSetSingle =  ( np.array( modelPredictOut[0] )[:,:,0] ).T
     for i in range(len(outputVarset)):
         combinedDataset[ outputVarset[i]+"_predicted" ] =predictionSetSingle[:,i].flatten()
-    combinedDataset.to_csv("models/"+targetModel+"/predictedBuild"+matchString+".csv")
+    combinedDataset.to_csv("models/"+targetModel+"/predictedBuild"+matchString+resString+".csv")
     for index,row in combinedDataset.iterrows():
         materialName = row["SurfID"]
         chemName = row["ChemID"]
-        r0Actual = row["r0"]
-        rRange = np.arange( r0Actual, 1.5, 0.001)
+        r0Actual = float(row["r0"])
+        try:
+            rRange = np.arange( r0Actual, 1.5, 0.001)
+        except:
+            print(materialName, chemName, r0Actual)
+            continue
         pmf = np.zeros_like(rRange)
         for i in range(1,20):
             pmf = pmf + row["A"+str(i)+"_predicted"] * HGEFuncs.HGEFunc(rRange, r0Actual, i)
         finalPMF = np.stack((rRange,pmf),axis=-1)
         finalPMF[:,1] = finalPMF[:,1] - finalPMF[-1,1]
         np.savetxt("predicted_pmfs/"+modelString+"/"+materialName+"/"+chemName+".dat" ,finalPMF,fmt='%.18f' ,delimiter=",")
+        #generatedPMFs.append( [materialName,chemName, r0Actual])
     readmeFile = open("predicted_pmfs/"+modelString+"/README","w")
     readmeFile.write("PMFs contained here were generated at " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " using model variant " + modelString)
     readmeFile.close()
-        
+    print("Completed PMF generation for this model", flush=True)
+    del loadedModel
+    tf.keras.backend.clear_session()
 
+#generatedPMFs = list(set(generatedPMFs))
 
+combinedDataset.drop(combinedDataset.index, inplace=True)
 
                
 #Next build composites and plot figures
 print("Averaging PMFs",flush=True)
 outputFig = plt.figure()
-modelString = targetModels[0]+matchString
-for index,row in combinedDataset.iterrows():
+modelString = targetModels[0]+matchString+resString
+for generatedPMF in generatedPMFs:
+    #generatedPMF = generatedPMFName.split("_")
+    materialName = generatedPMF[0]
+    chemName = generatedPMF[1]
+    r0Actual = generatedPMF[2]
     plt.clf()
-    materialName = row["SurfID"]
+    #materialName = row["SurfID"]
     os.makedirs("predicted_avg_pmfs/"+modelString+"/"+materialName+"_simple",exist_ok=True)
     os.makedirs("predicted_avg_pmfs/"+modelString+"/"+materialName+"_log",exist_ok=True)
     os.makedirs("predicted_avg_pmfs/"+modelString+"/"+materialName+"_figs",exist_ok=True)
-    os.makedirs("predicted_avg_pmfs/UA/"+modelString+"/"+materialName+"_pred",exist_ok=True)
-    chemName = row["ChemID"]
-    r0Actual = row["r0"]
+    os.makedirs("predicted_avg_pmfs/"+modelString+"/UA/"+materialName+"-pmfp",exist_ok=True)
+    #chemName = row["ChemID"]
+    #r0Actual = float(row["r0"])
+    #print(r0Actual)
     rRange = np.arange( r0Actual, 1.5, 0.001)
     simpleAvgPMF = np.zeros_like(rRange)
     logAvgPMF = np.zeros_like(rRange)
     for targetModel in targetModels:
-        pmfCandidate = np.genfromtxt("predicted_pmfs/"+targetModel+matchString+"/"+materialName+"/"+chemName+".dat", delimiter=",")
+        pmfCandidate = np.genfromtxt("predicted_pmfs/"+targetModel+matchString+resString+"/"+materialName+"/"+chemName+".dat", delimiter=",")
         plt.plot(pmfCandidate[:,0],pmfCandidate[:,1],'k:',alpha=0.2)
         simpleAvgPMF = simpleAvgPMF + pmfCandidate[:,1]
         pmfProbNorm = 1.0/np.trapz(  np.exp( -pmfCandidate[:,1] / kbTVal )  , pmfCandidate[:,0]        ) 
@@ -227,7 +285,7 @@ for index,row in combinedDataset.iterrows():
     finalPMF[:,1] = finalPMF[:,1] - finalPMF[-1,1]
     np.savetxt("predicted_avg_pmfs/"+modelString+"/"+materialName+"_simple/"+chemName+".dat" ,finalPMF,fmt='%.18f' ,delimiter=",")
     if chemName in UnitedAtomNames:
-        np.savetxt("predicted_avg_pmfs/UA/"+modelString+"/"+materialName+"_pred/"+UnitedAtomNames[chemName]+".dat" ,finalPMF,fmt='%.18f' ,delimiter=",")
+        np.savetxt("predicted_avg_pmfs/"+modelString+"/UA/"+materialName+"-pmfp/"+UnitedAtomNames[chemName]+".dat" ,finalPMF,fmt='%.18f' ,delimiter=",")
     finalPMFLog = np.stack((rRange,logAvgPMF),axis=-1)
     finalPMFLog[:,1] = finalPMFLog[:,1] - finalPMFLog[-1,1]
     np.savetxt("predicted_avg_pmfs/"+modelString+"/"+materialName+"_log/"+chemName+".dat" ,finalPMFLog,fmt='%.18f' ,delimiter=",")
@@ -241,3 +299,27 @@ for index,row in combinedDataset.iterrows():
     plt.ylabel("U(r) [kJ/mol]")
     plt.tight_layout()
     plt.savefig("predicted_avg_pmfs/"+modelString+"/"+materialName+"_figs/"+chemName+".png" )
+    print("Done "+materialName+"_"+chemName+"\n")
+plt.close()
+
+
+readmeFile = open("predicted_avg_pmfs/"+modelString+"/README","w")
+readmeFile.write("PMFs contained here were generated at " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " using models: \n")
+for modelName in targetModels:
+    readmeFile.write(modelName+"\n")
+if matchSource == True:
+    readmeFile.write("PMFs match sources given in SurfaceDefinitions at time of generation.\n")
+else:
+    readmeFile.write("Source matching has been applied to source =  SU-ions, SSD defined by U(r=0.25) = 35 convention. Recommended LJ cutoff 1.0 nm.")
+readmeFile.write("\nFigures: Blue gives the simple average of contributing PMFs (black lines). Red gives a secondary averaging scheme based on the associated probability distributions. Green, where existent, is the reference metadynamics PMF.\n")
+readmeFile.close()
+
+readmeFile = open("predicted_avg_pmfs/"+modelString+"/UA/README","w")
+readmeFile.write("PMFs contained here were generated at " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " using models: \n")
+for modelName in targetModels:
+    readmeFile.write(modelName+"\n")
+if matchSource == True:
+    readmeFile.write("PMFs match sources given in SurfaceDefinitions at time of generation.\n")
+else:
+    readmeFile.write("Source matching has been applied to source =  SU-ions, SSD defined by U(r=0.25) = 35 convention. Recommended LJ cutoff 1.0 nm.")
+readmeFile.close()

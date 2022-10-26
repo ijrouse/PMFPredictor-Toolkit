@@ -749,7 +749,7 @@ class PCoeffSumLayer(tf.keras.layers.Layer):
     def call(self, inputs):
       tiledPrefactors = tf.tile( tf.reshape( self.scale, (numCoeffs,-1)), (1,numPotentials))
       #
-      r0Valset = tf.math.minimum( inputs[1], )
+      r0Valset = tf.math.minimum( inputs[1], self.minInvSqrtR0)
       return tf.reduce_sum( tf.math.multiply( tf.math.multiply(inputs[0] ,tiledPrefactors   ) , inputs[1]), axis=1)
       
       

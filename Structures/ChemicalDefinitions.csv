@@ -19,7 +19,7 @@ TRPSCA-JS,Cc1c[nH]c2ccccc12,0,TRP side chain
 TYRSCA-JS,Cc1ccc(O)cc1,0,TYR side chain
 VALSCA-JS,CCC,0,VAL side chain
 HIPSCA-JS,Cc1c[nH]c[nH+]1,1, protonated HIS side chain
-CHL-JS,C[N+](C)(C)C,1, choline
+CHL-JS,C[N+](C)(C)C,1, tetramethylammonium
 ETA-JS,C[NH3+],1,ethanolamine
 PHO-JS,COP(=O)([O-])OC,-1,phosphate
 EST-JS,COC(C)=O,0,ester
@@ -67,7 +67,7 @@ TRPSCA-AC,Cc1c[nH]c2ccccc12,0,TRP side chain
 TYRSCA-AC,Cc1ccc(O)cc1,0,TYR side chain
 VALSCA-AC,CCC,0,VAL side chain
 HIPSCA-AC,Cc1c[nH]c[nH+]1,1, protonated HIS side chain
-CHL-AC,C[N+](C)(C)C,1, choline head
+CHL-AC,C[N+](C)(C)C,1,tetramethylammonium
 ETA-AC,C[NH3+],1,ethanolamine
 PHO-AC,COP(=O)([O-])OC,-1,phosphate
 EST-AC,COC(C)=O,0,ester
@@ -193,3 +193,7 @@ THEOBROMINE-AC,Cn1cnc2c1c(=O)[nH]c(=O)n2C,0,Theobromine
 BENZENE-AC,c1ccccc1,0,Benzene
 FURAN-AC,c1ccoc1,0,Furan
 PYRROLE-AC,[nH]1cccc1,0,Pyrrole
+CHOL-JS,C[N+](C)(C)CCO,1,Choline
+BGALNA-JS,CC(=O)NC1C(O)OC(CO)C(O)C1O,0,2-acetyl-2-deoxy-beta-d-galactoseamine
+CHOL-AC,C[N+](C)(C)CCO,1,Choline
+BGALNA-AC,CC(=O)NC1C(O)OC(CO)C(O)C1O,0,2-acetyl-2-deoxy-beta-d-galactoseamine

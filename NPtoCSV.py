@@ -89,7 +89,7 @@ def charmmguiToCSV(targetName, targetFolder):
 
 if __name__ == "__main__":
     print("Generating structures for target CHARMM-GUI downloads")
-    targetList = targetList = [
+    targetList = [
         ["AuFCC110UCD","../Downloads/CharmmGUINPs/Au110CG/Au110CG"],
         ["AuFCC111UCD","../Downloads/CharmmGUINPs/Au111CG/Au111CG"],
         ["CaO001","../Downloads/CharmmGUINPs/CaO-001-charmmgui"],
