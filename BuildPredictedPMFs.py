@@ -17,8 +17,14 @@ import argparse
 
 parser = argparse.ArgumentParser(description="Parameters for BuildPredictedPMFs")
 parser.add_argument("-m","--match", type=int,default=0, help="If zero, use default parameters for SSD, source, methane offset. Else use predefined.")
+parser.add_argument("-b","--bootstrap", type=int,default=0, help="If zero, use cluster results. Else bootstrapping")
+parser.add_argument("-a","--averageonly",type=int,default=0,help="If non-zero, skip recalculation and just average")
+
 args = parser.parse_args()
 
+skipRecalc  = False
+if args.averageonly == 1:
+    skipRecalc = True
 
 matchSource = False
 matchString = "_canonical"
@@ -180,6 +186,8 @@ outputVarset = ["A1","A2","A3","A4","A5","A6","A7","A8","A9","A10","A11","A12","
 targetModelsCluster = [
 "PMFPredictor-oct13-clustersplit-ensemble1",
 "PMFPredictor-oct13-clustersplit-ensemble2",
+"PMFPredictor-oct13-clustersplit-ensemble3",
+"PMFPredictor-oct13-clustersplit-ensemble4",
 "PMFPredictor-oct13-clustersplit-ensemble5"
 ]
 
@@ -196,7 +204,18 @@ targetModelsBootstrap = [
 "PMFPredictor-oct13-simplesplit-bootstrapped-ensemble10"
 ]
 
-targetModels = targetModelsBootstrap
+if args.bootstrap == 0:
+    useBootstrap = False
+else:
+    useBootstrap = True
+
+
+if useBootstrap == True:
+    targetModels = targetModelsBootstrap
+    targetModelAverages = targetModelsBootstrap
+else:
+    targetModels = targetModelsCluster
+    targetModelAverages = ["PMFPredictor-oct13-clustersplit-ensemble1","PMFPredictor-oct13-clustersplit-ensemble2","PMFPredictor-oct13-clustersplit-ensemble5"]
 
 generatedPMFs = []
 for index,row in combinedDataset.iterrows():
@@ -273,14 +292,14 @@ for generatedPMF in generatedPMFs:
     rRange = np.arange( r0Actual, 1.5, 0.001)
     simpleAvgPMF = np.zeros_like(rRange)
     logAvgPMF = np.zeros_like(rRange)
-    for targetModel in targetModels:
+    for targetModel in targetModelAverages:
         pmfCandidate = np.genfromtxt("predicted_pmfs/"+targetModel+matchString+resString+"/"+materialName+"/"+chemName+".dat", delimiter=",")
         plt.plot(pmfCandidate[:,0],pmfCandidate[:,1],'k:',alpha=0.2)
         simpleAvgPMF = simpleAvgPMF + pmfCandidate[:,1]
         pmfProbNorm = 1.0/np.trapz(  np.exp( -pmfCandidate[:,1] / kbTVal )  , pmfCandidate[:,0]        ) 
         logAvgPMF += pmfProbNorm * np.exp(-pmfCandidate[:,1]/kbTVal)
-    simpleAvgPMF = simpleAvgPMF / len(targetModels)
-    logAvgPMF = - kbTVal * np.log(  logAvgPMF/len(targetModels) )
+    simpleAvgPMF = simpleAvgPMF / len(targetModelAverages)
+    logAvgPMF = - kbTVal * np.log(  logAvgPMF/len(targetModelAverages) )
     finalPMF = np.stack((rRange,simpleAvgPMF),axis=-1)
     finalPMF[:,1] = finalPMF[:,1] - finalPMF[-1,1]
     np.savetxt("predicted_avg_pmfs/"+modelString+"/"+materialName+"_simple/"+chemName+".dat" ,finalPMF,fmt='%.18f' ,delimiter=",")
