@@ -283,7 +283,7 @@ for generatedPMF in generatedPMFs:
     plt.clf()
     #materialName = row["SurfID"]
     os.makedirs("predicted_avg_pmfs/"+modelString+"/"+materialName+"_simple",exist_ok=True)
-    os.makedirs("predicted_avg_pmfs/"+modelString+"/"+materialName+"_log",exist_ok=True)
+    #os.makedirs("predicted_avg_pmfs/"+modelString+"/"+materialName+"_log",exist_ok=True)
     os.makedirs("predicted_avg_pmfs/"+modelString+"/"+materialName+"_figs",exist_ok=True)
     os.makedirs("predicted_avg_pmfs/"+modelString+"/UA/"+materialName+"-pmfp",exist_ok=True)
     #chemName = row["ChemID"]
@@ -307,10 +307,10 @@ for generatedPMF in generatedPMFs:
         np.savetxt("predicted_avg_pmfs/"+modelString+"/UA/"+materialName+"-pmfp/"+UnitedAtomNames[chemName]+".dat" ,finalPMF,fmt='%.18f' ,delimiter=",")
     finalPMFLog = np.stack((rRange,logAvgPMF),axis=-1)
     finalPMFLog[:,1] = finalPMFLog[:,1] - finalPMFLog[-1,1]
-    np.savetxt("predicted_avg_pmfs/"+modelString+"/"+materialName+"_log/"+chemName+".dat" ,finalPMFLog,fmt='%.18f' ,delimiter=",")
+    #np.savetxt("predicted_avg_pmfs/"+modelString+"/"+materialName+"_log/"+chemName+".dat" ,finalPMFLog,fmt='%.18f' ,delimiter=",")
 
     plt.plot(finalPMF[:,0],finalPMF[:,1],'b-')
-    plt.plot(finalPMFLog[:,0],finalPMFLog[:,1],'r-')
+    #plt.plot(finalPMFLog[:,0],finalPMFLog[:,1],'r-')
     knownPMF = HGEFuncs.loadPMF("AllPMFs/"+materialName+"_"+chemName+".dat")
     if len(knownPMF) > 2:
         plt.plot( knownPMF[:,0], knownPMF[:,1], 'g-')
@@ -330,7 +330,7 @@ if matchSource == True:
     readmeFile.write("PMFs match sources given in SurfaceDefinitions at time of generation.\n")
 else:
     readmeFile.write("Source matching has been applied to source =  SU-ions, SSD defined by U(r=0.25) = 35 convention. Recommended LJ cutoff 1.0 nm.")
-readmeFile.write("\nFigures: Blue gives the simple average of contributing PMFs (black lines). Red gives a secondary averaging scheme based on the associated probability distributions. Green, where existent, is the reference metadynamics PMF.\n")
+readmeFile.write("\nFigures: Blue gives the simple average of contributing PMFs (black lines). Green, where existent, is the reference metadynamics PMF.\n")
 readmeFile.close()
 
 readmeFile = open("predicted_avg_pmfs/"+modelString+"/UA/README","w")
