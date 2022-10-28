@@ -90,7 +90,7 @@ else:
     outFile = open(targetModel+"_"+matchMode+singleString+"_eads.csv","w")
 
 
-outFile.write("#Material,Chemical,Class, EAdsReal[kJ/mol], EadsAvgPred[kJ/mol], MeanEadsPred[kJ/mol],SDevEadsPred[kJ/mol] \n")
+outFile.write("#Material,Chemical,Class, EAdsMD[kJ/mol], EadsAvgPred[kJ/mol], MeanEadsPred[kJ/mol],SDevEadsPred[kJ/mol] \n")
 for testPMF in allPMFs:
     PMFTerms= testPMF.split(".")[0].split("_")  
     #print(PMFTerms)
