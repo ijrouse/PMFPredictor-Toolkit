@@ -12,6 +12,7 @@ Introduction and quick start
 The easiest way to use this package is via the GUI, which you can run using "python3 PMFPredictorToolkit.py" or by setting it to be executable via "chmod 755 PMFPredictorToolkit.py", then "./PMFPredictorToolkit.py" .
 
 To make everything work, you'll need an up-to-date Python installation with Tensorflow installed, which should also give you NumPy and SciPy. You'll also need pandas and matplotlib for predictions, and PySide6 for running the GUI. You will also need to download the model repository to get the pre-trained models for the actual prediction of PMFs.
+A set of pre-trained models is available via Zenodo: 10.5281/zenodo.7253566 corresponding to the original publication. 
 Generating new chemical structures requires acpype (pip3 install acpype) which in turn requires openbabel - download the source, build that with python bindings, install, then use "pip3 install openbabel" to set up all the bindings. 
 
 
