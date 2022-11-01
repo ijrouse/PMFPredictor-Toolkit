@@ -1,3 +1,10 @@
+'''Calculate statistics for adsorption energies extracted from PMFs by averaging over ensemble models. Class labels are assigned by inspecting PMFs
+in the "AllPMFs" folder to determine surfaces and chemicals employed during model development, which are labeled as training. All other chemicals and 
+surfaces are assigned the novel tag, including those in TestingPMFs[date]. If the -c 1 option is used, the script also attempts to find any other generated
+PMFs for chemicals and surfaces which do not have metadynamics PMFs and generates statistics for these too.
+
+'''
+
 import numpy as np
 import matplotlib.pyplot as plt
 import os
@@ -10,7 +17,7 @@ parser = argparse.ArgumentParser(description="Parameters for BuildPredictedPMFs"
 parser.add_argument("-b","--bootstrap", type=int,default=0, help="If zero, use cluster results. Else bootstrapping")
 
 parser.add_argument("-m","--match", type=int,default=0, help="If zero, use default parameters for SSD, source, methane offset. Else use predefined.")
-parser.add_argument("-c","--complete",type=int,default=0,help="Include also PMFs with no real equivalent")
+parser.add_argument("-c","--complete",type=int,default=1,help="If nonzero generate stats for PMFs with no metadynamics equivalent")
 args = parser.parse_args()
 
 
