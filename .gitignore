@@ -13,6 +13,7 @@ SurfacePotentials/oldpotentials
 ChemicalPotentials/oldpotentials
 ChemicalPotentialsOld
 models
+!models/PMFPredictor-oct13-clustersplit-ensemble1/checkpoints/*
 Datasets/ChemicalHGE
 Datasets/SurfaceHGE
 Datasets/PMFHGE
