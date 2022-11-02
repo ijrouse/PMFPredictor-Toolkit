@@ -61,8 +61,8 @@ for material in materialSet:
         
         axs[row,column].set_xlim(0,1.5)
         axs[row,column].set_ylim( minEnergy - 5  , 25)
-        axs[row,column].set_xlabel("r [nm]" )
-        axs[row,column].set_ylabel(r"U(r) $[\mathrm{kJ} \mathrm{mol}^{-1}]$")
+        axs[row,column].set_xlabel("h [nm]" )
+        axs[row,column].set_ylabel(r"U(h) $[\mathrm{kJ}\cdot\mathrm{mol}^{-1}]$")
         axs[row,column].set_title( pmfSet[i][:-4] )
     #plt.show()
     #print(pmfSet)

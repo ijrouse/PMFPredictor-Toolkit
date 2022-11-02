@@ -227,44 +227,44 @@ for index,row in combinedDataset.iterrows():
 
 #generatedPMFs = (combinedDataset["SurfID"] + "_" + combinedDataset["ChemID"]).tolist()
 resString = ""
-
-for targetModel in targetModels:
-    modelString = targetModel+matchString+resString
-    for materialName in uniqueMaterials:
-        os.makedirs( "predicted_pmfs/"+modelString+"/"+materialName,exist_ok=True)
-    print("Beginning predictions for model "+targetModel, flush=True)
-    varsetFile = open("models/"+targetModel+"/varset.txt","r")
-    aaVarSet = varsetFile.readline().strip().split(",")
-    varsetFile.close()
-    loadedModel = tf.keras.models.load_model("models/"+targetModel+"/checkpoints/checkpoint-train"    , custom_objects={ 'loss': scaledMSE(1) ,'aaVarSet':aaVarSet, 'potentialKLLoss':potentialKLLoss },compile=False)
-    print("Model loaded", flush=True)
-    modelPredictOut = loadedModel.predict(  [ combinedDataset[aaVarSet]   ]   )
-    predictionSetSingle =  ( np.array( modelPredictOut[0] )[:,:,0] ).T
-    for i in range(len(outputVarset)):
-        combinedDataset[ outputVarset[i]+"_predicted" ] =predictionSetSingle[:,i].flatten()
-    combinedDataset.to_csv("models/"+targetModel+"/predictedBuild"+matchString+resString+".csv")
-    for index,row in combinedDataset.iterrows():
-        materialName = row["SurfID"]
-        chemName = row["ChemID"]
-        r0Actual = float(row["r0"])
-        try:
-            rRange = np.arange( r0Actual, 1.5, 0.001)
-        except:
-            print(materialName, chemName, r0Actual)
-            continue
-        pmf = np.zeros_like(rRange)
-        for i in range(1,20):
-            pmf = pmf + row["A"+str(i)+"_predicted"] * HGEFuncs.HGEFunc(rRange, r0Actual, i)
-        finalPMF = np.stack((rRange,pmf),axis=-1)
-        finalPMF[:,1] = finalPMF[:,1] - finalPMF[-1,1]
-        np.savetxt("predicted_pmfs/"+modelString+"/"+materialName+"/"+chemName+".dat" ,finalPMF,fmt='%.18f' ,delimiter=",")
-        #generatedPMFs.append( [materialName,chemName, r0Actual])
-    readmeFile = open("predicted_pmfs/"+modelString+"/README","w")
-    readmeFile.write("PMFs contained here were generated at " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " using model variant " + modelString)
-    readmeFile.close()
-    print("Completed PMF generation for this model", flush=True)
-    del loadedModel
-    tf.keras.backend.clear_session()
+if skipRecalc  == False:
+    for targetModel in targetModels:
+        modelString = targetModel+matchString+resString
+        for materialName in uniqueMaterials:
+            os.makedirs( "predicted_pmfs/"+modelString+"/"+materialName,exist_ok=True)
+        print("Beginning predictions for model "+targetModel, flush=True)
+        varsetFile = open("models/"+targetModel+"/varset.txt","r")
+        aaVarSet = varsetFile.readline().strip().split(",")
+        varsetFile.close()
+        loadedModel = tf.keras.models.load_model("models/"+targetModel+"/checkpoints/checkpoint-train"    , custom_objects={ 'loss': scaledMSE(1) ,'aaVarSet':aaVarSet, 'potentialKLLoss':potentialKLLoss },compile=False)
+        print("Model loaded", flush=True)
+        modelPredictOut = loadedModel.predict(  [ combinedDataset[aaVarSet]   ]   )
+        predictionSetSingle =  ( np.array( modelPredictOut[0] )[:,:,0] ).T
+        for i in range(len(outputVarset)):
+            combinedDataset[ outputVarset[i]+"_predicted" ] =predictionSetSingle[:,i].flatten()
+        combinedDataset.to_csv("models/"+targetModel+"/predictedBuild"+matchString+resString+".csv")
+        for index,row in combinedDataset.iterrows():
+            materialName = row["SurfID"]
+            chemName = row["ChemID"]
+            r0Actual = float(row["r0"])
+            try:
+                rRange = np.arange( r0Actual, 1.5, 0.001)
+            except:
+                print(materialName, chemName, r0Actual)
+                continue
+            pmf = np.zeros_like(rRange)
+            for i in range(1,20):
+                pmf = pmf + row["A"+str(i)+"_predicted"] * HGEFuncs.HGEFunc(rRange, r0Actual, i)
+            finalPMF = np.stack((rRange,pmf),axis=-1)
+            finalPMF[:,1] = finalPMF[:,1] - finalPMF[-1,1]
+            np.savetxt("predicted_pmfs/"+modelString+"/"+materialName+"/"+chemName+".dat" ,finalPMF,fmt='%.18f' ,delimiter=",")
+            #generatedPMFs.append( [materialName,chemName, r0Actual])
+        readmeFile = open("predicted_pmfs/"+modelString+"/README","w")
+        readmeFile.write("PMFs contained here were generated at " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " using model variant " + modelString)
+        readmeFile.close()
+        print("Completed PMF generation for this model", flush=True)
+        del loadedModel
+        tf.keras.backend.clear_session()
 
 #generatedPMFs = list(set(generatedPMFs))
 
@@ -314,8 +314,8 @@ for generatedPMF in generatedPMFs:
     knownPMF = HGEFuncs.loadPMF("AllPMFs/"+materialName+"_"+chemName+".dat")
     if len(knownPMF) > 2:
         plt.plot( knownPMF[:,0], knownPMF[:,1], 'g-')
-    plt.xlabel("r [nm]")
-    plt.ylabel("U(r) [kJ/mol]")
+    plt.xlabel("h [nm]")
+    plt.ylabel(r"U(h) $[\mathrm{kJ}\cdot\mathrm{mol}^{-1}]$")
     plt.tight_layout()
     plt.savefig("predicted_avg_pmfs/"+modelString+"/"+materialName+"_figs/"+chemName+".png" )
     print("Done "+materialName+"_"+chemName+"\n")
@@ -329,7 +329,7 @@ for modelName in targetModels:
 if matchSource == True:
     readmeFile.write("PMFs match sources given in SurfaceDefinitions at time of generation.\n")
 else:
-    readmeFile.write("Source matching has been applied to source =  SU-ions, SSD defined by U(r=0.25) = 35 convention. Recommended LJ cutoff 1.0 nm.")
+    readmeFile.write("Source matching has been applied to source =  SU-ions, SSD defined by U_C(h=0.2) = 35 convention. Recommended LJ cutoff 1.0 nm.")
 readmeFile.write("\nFigures: Blue gives the simple average of contributing PMFs (black lines). Green, where existent, is the reference metadynamics PMF.\n")
 readmeFile.close()
 
@@ -340,5 +340,5 @@ for modelName in targetModels:
 if matchSource == True:
     readmeFile.write("PMFs match sources given in SurfaceDefinitions at time of generation.\n")
 else:
-    readmeFile.write("Source matching has been applied to source =  SU-ions, SSD defined by U(r=0.25) = 35 convention. Recommended LJ cutoff 1.0 nm.")
+    readmeFile.write("Source matching has been applied to source =  SU-ions, SSD defined by U_C(h=0.2) = 35 convention. Recommended LJ cutoff 1.0 nm.")
 readmeFile.close()
