@@ -17,7 +17,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description="Parameters for BuildPredictedPMFs")
 parser.add_argument("-m","--match", type=int,default=0, help="If zero, use default parameters for SSD, source, methane offset. Else use predefined.")
-parser.add_argument("-b","--bootstrap", type=int,default=0, help="If zero, use cluster results. Else bootstrapping")
+parser.add_argument("-b","--bootstrap", type=int,default=1, help="If zero, use cluster results. Else bootstrapping")
 parser.add_argument("-a","--averageonly",type=int,default=0,help="If non-zero, skip recalculation and just average")
 
 args = parser.parse_args()
