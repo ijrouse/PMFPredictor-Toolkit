@@ -40,6 +40,8 @@ Level 4: PMF output
 BuildPredictedPMFs.py: Generates PMFs for all surface/chemical pairs using the model trained in Level 3.
 CalcEAdsSet.py: Extract binding energies from generated PMFs.
 
+
+Most of these are accessible via the GUI (PMFPredictorToolkit.py) but some are more efficient to run via command line. See the Wiki page on Github for details.
 ===========
 Source? SSD type?
 ===========
@@ -50,6 +52,7 @@ The "source" variable for a surface defines whether it should be treated as a St
 3) SSD is defined by the centre-of-slab to centre-of-adsorbate distance minus one-half the slab width
 4) SSD is defined by the centre-of-sheet to centre-of-adsorbate distance.
 
+Generally, we suggest using source type 1 (Stockholm with ions) together with the SSD type 1 (reference surface) and this is implemented as the default option. These settings are also used for the generation of the canonical set.
 ===========
 AN IMPORTANT NOTE ON TRAINING/VALIDATION/TEST splits
 ===========
