@@ -257,7 +257,7 @@ if skipRecalc  == False:
                 pmf = pmf + row["A"+str(i)+"_predicted"] * HGEFuncs.HGEFunc(rRange, r0Actual, i)
             finalPMF = np.stack((rRange,pmf),axis=-1)
             finalPMF[:,1] = finalPMF[:,1] - finalPMF[-1,1]
-            np.savetxt("predicted_pmfs/"+modelString+"/"+materialName+"/"+chemName+".dat" ,finalPMF,fmt='%.18f' ,delimiter=",")
+            np.savetxt("predicted_pmfs/"+modelString+"/"+materialName+"/"+chemName+".dat" ,finalPMF,fmt='%.18f' ,delimiter=",", header=materialName+"_"+chemName+"\nh[nm],U(h)[kJ/mol]")
             #generatedPMFs.append( [materialName,chemName, r0Actual])
         readmeFile = open("predicted_pmfs/"+modelString+"/README","w")
         readmeFile.write("PMFs contained here were generated at " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " using model variant " + modelString)
@@ -302,9 +302,9 @@ for generatedPMF in generatedPMFs:
     logAvgPMF = - kbTVal * np.log(  logAvgPMF/len(targetModelAverages) )
     finalPMF = np.stack((rRange,simpleAvgPMF),axis=-1)
     finalPMF[:,1] = finalPMF[:,1] - finalPMF[-1,1]
-    np.savetxt("predicted_avg_pmfs/"+modelString+"/"+materialName+"_simple/"+chemName+".dat" ,finalPMF,fmt='%.18f' ,delimiter=",")
+    np.savetxt("predicted_avg_pmfs/"+modelString+"/"+materialName+"_simple/"+chemName+".dat" ,finalPMF,fmt='%.18f' ,delimiter=",", header=materialName+"_"+chemName+"\nh[nm],U(h)[kJ/mol]")
     if chemName in UnitedAtomNames:
-        np.savetxt("predicted_avg_pmfs/"+modelString+"/UA/"+materialName+"-pmfp/"+UnitedAtomNames[chemName]+".dat" ,finalPMF,fmt='%.18f' ,delimiter=",")
+        np.savetxt("predicted_avg_pmfs/"+modelString+"/UA/"+materialName+"-pmfp/"+UnitedAtomNames[chemName]+".dat" ,finalPMF,fmt='%.18f' ,delimiter=",", header=materialName+"_"+UnitedAtomNames[chemName]+"\nh[nm],U(h)[kJ/mol]")
     finalPMFLog = np.stack((rRange,logAvgPMF),axis=-1)
     finalPMFLog[:,1] = finalPMFLog[:,1] - finalPMFLog[-1,1]
     #np.savetxt("predicted_avg_pmfs/"+modelString+"/"+materialName+"_log/"+chemName+".dat" ,finalPMFLog,fmt='%.18f' ,delimiter=",")

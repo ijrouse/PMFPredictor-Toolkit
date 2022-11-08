@@ -1,0 +1,57 @@
+#Note that this file is not automatically generated due to the complexity of surfaces and so should be manually appended to. We include information duplicated from the SurfaceDefinition for convenience.
+Surface-ID 	 	Shape		Source	SSD-Type	Resolution	Notes 
+AuFCC100 		Planar		0 	0 		0.0032 		FCC Gold (100)
+CdSeWurtzite2-10	Planar		0	0		0.0045 		CdSe Wurtzite (2-10) 
+TiO2-ana-100		Planar		1	1		0.002 		Hydrated anatase (100) 
+TiO2-ana-101		Planar		1	1 		0.002 		Hydrated anatase (101) 
+TiO2-rut-11		Planar 		1 	1 		0.002 		Hydrated rutile (110) 
+TiO2-rut-100		Planar 	 	1 	1 		0.002 		Hydrated rutile (110) 
+Fe2O3-001O		Planar 		1 	1 		0.002 		Hydrated iron oxide (001) 
+SiO2-Quartz 		Planar 		1 	1 		0.002 		Quartz
+SiO2-Amorphous		Planar 		1 	1		0.002 		Amorphous silica   
+CNT15			Cylindrical 	1 	0		0.002 		Carbon nanotube - 1.5 nm diameter 
+CNT15-COOH-30		Cylindrical 	1 	0		0.002 		Carbon nanotube - 1.5 nm diameter - 30\%wt COOH modified  
+CNT15-COOH-3		Cylindrical 	1 	0		0.002 		Carbon nanotube - 1.5 nm diameter - 3\%wt COOH modified
+CNT15-COO--10		Cylindrical 	1 	0		0.002	 	Carbon nanotube - 1.5 nm diameter - 10\%wt COO- modified 
+CNT15-COO--3		Cylindrical 	1 	0		0.002 	 	Carbon nanotube - 1.5 nm diameter - 3\%wt COO- modified
+CNT15-NH2-14		Cylindrical 	1 	0		0.002	 	Carbon nanotube - 1.5 nm diameter - 14\%wt NH2 modified 
+CNT15-NH2-2		Cylindrical 	1 	0 		0.002	 	Carbon nanotube - 1.5 nm diameter - 2\%wt NH2 modified
+CNT15-NH3+-4		Cylindrical 	1 	0		0.002	 	Carbon nanotube -  1.5 nm diameter - 4\%wt NH3+ modified 
+CNT15-NH3+-2		Cylindrical 	1 	0 		0.002	 	Carbon nanotube - 1.5 nm diameter - 2\%wt NH3+ modified
+CNT15-OH-14		Cylindrical 	1 	0		0.002	 	Carbon nanotube - 1.5 nm diameter - 14\%wt OH modified 
+CNT15-OH-4 		Cylindrical 	1 	0 		0.002	 	Carbon nanotube - 1.5 nm diameter - 4\%wt OH modified
+graphene		Planar 	 	1 	3 		0.002 		Single-layer graphene
+bi-graphene		Planar 		1 	3		0.002 	 	Double-layer graphene 
+tri-graphene		Planar 	 	1 	3		0.002 		Triple-layer graphene
+grapheneoxide		Planar 	 	1	3 		0.002 	 	Graphene oxide - 30\% oxidation 
+redgrapheneoxide	Planar 		1 	3		0.002 	 	Reduced graphene oxide - 10\% oxidation
+C-amorph-2		Planar 	 	1 	1		0.002 	 	Amorphous carbon 
+AuFCC100UCD		Planar 	 	3 	2 		0.00051 	FCC Gold (100) 
+AuFCC110UCD		Planar 	 	2 	2		0.00034	 	FCC Gold (110) 
+AuFCC111UCD 		Planar 	 	2 	2 		0.00029	 	FCC Gold (111)
+Ag100 			Planar 	 	3 	2 		0.0018	 	FCC Silver (100)
+Ag110 			Planar 	 	2 	2 		0.0018	 	FCC Silver (101)
+Ag111 			Planar 	 	2 	2		0.0018 	 	FCC Silver (111) 
+Fe001			Planar		3	2		0.0018	 	FCC Iron (001/100)
+Fe110			Planar		2	2		0.0019	 	FCC Iron (110)
+Fe111			Planar		2	2		0.0019	 	FCC Iron (111)
+Cu001			Planar		3	2		0.00030	 	FCC Copper (001/100)
+Cu110			Planar		2	2		0.00021	 	FCC Copper (110)
+Cu111			Planar		2	2		0.00025	 	FCC Copper (111)
+C-amorph-3		Planar		1	1		0.002	 	Amorphous carbon
+AuFCC100-Ablate0	Planar		1	0		0.002		FCC Gold (100) - 0\% ablation
+AuFCC100-Ablate5	Planar		1	0		0.002		FCC Gold (100) - 5\% ablation
+AuFCC100-Ablate25	Planar		1	0		0.002		FCC Gold (100) - 25\% ablation
+AuFCC100-Ablate50	Planar		1	0		0.002		FCC Gold (100) - 50\% ablation
+AuFCC100-Ablate75\	Planar		1	0		0.002		FCC Gold (100) - 75\% ablation
+AuFCC100-Ablate100	Planar		1	0		0.002		FCC Gold (100) - 100\% ablation
+GoldBrush		Planar		1	0		0.002 	 	FCC Gold (100) - PE brush - 50\% coverage
+CaO001			Planar		1	0		0.002	 	FCC Calcium oxide (001)
+Pt001			Planar		1	0		0.002	 	FCC Platinum(001/100)
+TricalciumSilicate001	Planar		1	0		0.002	 	Tricalcium silicate (001)
+Au-001-PE		Planar		1	0		0.002	 	Au (100) - PE brush - 100\% coverage
+Au-001-PEG		Planar		1	0		0.002 	 	Au (100) - PEG brush - 100\% coverage 
+Al2O3-001		Planar		1	0		0.002 	 	Aluminium oxide (001)
+Cr2O3-001		Planar		1	0		0.002 	 	Chromium oxide (001)
+Ce-001			Planar		1	0		0.002	 	FCC Cerium (001)
+Hydroxyapatite-001	Planar		1	0		0.002		Hydroxyapatite (001)
