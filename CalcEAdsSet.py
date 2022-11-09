@@ -22,6 +22,9 @@ args = parser.parse_args()
 
 os.makedirs("AllPMFs",exist_ok=True)
 os.makedirs("TestingPMFs251022",exist_ok=True)
+outputFolder = "calculated_eads"
+os.makedirs(outputFolder,exist_ok=True)
+
 allTrainingPMFsScan = os.listdir("AllPMFs")
 allTestingPMFsScan = os.listdir("TestingPMFs251022")
 
@@ -93,9 +96,9 @@ if args.complete == 1:
 #allPMFs.sort()
 
 if args.complete == 1:
-    outFile = open(targetModel+"_"+matchMode+singleString+"_all_eads.csv","w")
+    outFile = open(outputFolder+"/"+targetModel+"_"+matchMode+singleString+"_all_eads.csv","w")
 else:
-    outFile = open(targetModel+"_"+matchMode+singleString+"_eads.csv","w")
+    outFile = open(outputFolder+"/"+targetModel+"_"+matchMode+singleString+"_eads.csv","w")
 
 
 outFile.write("#Material,Chemical,Class, EAdsMD[kJ/mol], EadsAvgPred[kJ/mol], MeanEadsPred[kJ/mol],SDevEadsPred[kJ/mol] \n")

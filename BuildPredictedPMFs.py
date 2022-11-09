@@ -329,7 +329,7 @@ for modelName in targetModels:
 if matchSource == True:
     readmeFile.write("PMFs match sources given in SurfaceDefinitions at time of generation.\n")
 else:
-    readmeFile.write("Source matching has been applied to source =  SU-ions, SSD defined by U_C(h=0.2) = 35 convention. Recommended LJ cutoff 1.0 nm.")
+    readmeFile.write("Source matching has been applied to source =  SU-ions, SSD class 1, surface defined by U_C(h=0.2) = 35 convention. Recommended LJ cutoff 1.0 nm.")
 readmeFile.write("\nFigures: Blue gives the simple average of contributing PMFs (black lines). Green, where existent, is the reference metadynamics PMF.\n")
 readmeFile.close()
 
@@ -340,5 +340,5 @@ for modelName in targetModels:
 if matchSource == True:
     readmeFile.write("PMFs match sources given in SurfaceDefinitions at time of generation.\n")
 else:
-    readmeFile.write("Source matching has been applied to source =  SU-ions, SSD defined by U_C(h=0.2) = 35 convention. Recommended LJ cutoff 1.0 nm.")
+    readmeFile.write("Source matching has been applied to source =  SU-ions, SSD class 1, surface defined by U_C(h=0.2) = 35 convention. Recommended LJ cutoff 1.0 nm.")
 readmeFile.close()

@@ -1,7 +1,11 @@
+'''Prepare the set of figures based on the UnitedAtom selections and prepare the directory for inclusion in UA'''
+
 import numpy as np
 import matplotlib.pyplot as plt
 import os
 import HGEFuncs
+import shutil
+
 
 basePath = "predicted_avg_pmfs/PMFPredictor-oct13-simplesplit-bootstrapped-ensemble1_canonical/UA"
 matchPath = "predicted_avg_pmfs/PMFPredictor-oct13-simplesplit-bootstrapped-ensemble1_matched/UA"
@@ -11,6 +15,9 @@ plt.rcParams.update({
 materialSet = os.listdir(basePath)
 pmfsPerLine = 4
 os.makedirs("UAPMFFigs", exist_ok =True)
+os.makedirs("surface_pmfp", exist_ok=True)
+shutil.copy2( basePath+"/README",  "surface_pmfp/README"  )
+
 
 for material in materialSet:
     print("Start material: ", material)
@@ -18,6 +25,7 @@ for material in materialSet:
         pmfSet = os.listdir(basePath+"/"+material)
     except:
         continue
+    os.makedirs("surface_pmfp/"+material, exist_ok = True)
     pmfSet.sort()
     numPMFs = len(pmfSet)
     numRows = int(numPMFs/pmfsPerLine)
@@ -33,6 +41,7 @@ for material in materialSet:
         row = int(i/pmfsPerLine)
         chemName =  pmfSet[i][:-4]
         #print(i,row,column, pmfSet[i])
+        shutil.copy2( basePath+"/"+material+"/"+pmfSet[i],  "surface_pmfp/"+material+"/"+pmfSet[i]  )
         pmfData = np.genfromtxt( basePath+"/"+material+"/"+pmfSet[i],delimiter="," )
         minEnergy =  np.amin( pmfData[:,1]) 
         axs[row,column].plot(pmfData[:,0],pmfData[:,1],"b-")
@@ -70,4 +79,3 @@ for material in materialSet:
     plt.savefig( "UAPMFFigs/"+material+".png" )
 
 #print(os.listdir(basePath))
-
