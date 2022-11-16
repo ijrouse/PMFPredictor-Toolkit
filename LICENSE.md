@@ -6,3 +6,5 @@ https://arxiv.org/abs/2211.07999
 
 and the Zenodo repository if results or pre-trained models are used:
 Rouse, Ian, & Lobaskin, Vladimir. (2022). Computed surface and chemical potentials, expansion coefficients, structures, models and results for the PMFPredictor Toolkit (1.1) [Data set]. Zenodo. https://doi.org/10.5281/zenodo.7303624
+
+We also suggest citing the software release and version number from this repository to ensure reproducibility in case of future changes. 
