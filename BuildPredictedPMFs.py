@@ -167,7 +167,7 @@ UnitedAtomNames = {
  "LEUSCA-AC":"LEU",
  "METSCA-AC":"MET",
  "PHESCA-AC":"PHE",
- "TRYSCA-AC":"TYR",
+ "TYRSCA-AC":"TYR",
  "TRPSCA-AC":"TRP",
  "HIPSCA-AC":"HIP",
  "ETA-AC":"ETA",
@@ -308,7 +308,6 @@ for generatedPMF in generatedPMFs:
     finalPMFLog = np.stack((rRange,logAvgPMF),axis=-1)
     finalPMFLog[:,1] = finalPMFLog[:,1] - finalPMFLog[-1,1]
     #np.savetxt("predicted_avg_pmfs/"+modelString+"/"+materialName+"_log/"+chemName+".dat" ,finalPMFLog,fmt='%.18f' ,delimiter=",")
-
     plt.plot(finalPMF[:,0],finalPMF[:,1],'b-')
     #plt.plot(finalPMFLog[:,0],finalPMFLog[:,1],'r-')
     knownPMF = HGEFuncs.loadPMF("AllPMFs/"+materialName+"_"+chemName+".dat")
