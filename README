@@ -15,7 +15,9 @@ To make everything work, you'll need an up-to-date Python installation with Tens
 A set of pre-trained models is available via Zenodo: 10.5281/zenodo.7253566 corresponding to the original publication. 
 Generating new chemical structures requires acpype (pip3 install acpype) which in turn requires openbabel - download the source, build that with python bindings, install, then use "pip3 install openbabel" to set up all the bindings. 
 
-
+If you generate or use results from this repository please cite the following publication:
+I. Rouse, V. Lobaskin, Machine-learning based prediction of small molecule -- surface interaction potentials,  	arXiv:2211.07999
+https://arxiv.org/abs/2211.07999
 ===========
 Complete Contents
 ===========

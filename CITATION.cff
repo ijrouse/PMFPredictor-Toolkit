@@ -3,8 +3,26 @@ message: "If you use this software, please cite it as below."
 authors:
 - family-names: "Rouse"
   given-names: "Ian"
-  orcid: "https://orcid.org/0000-0000-0000-0000"
+  orcid: "https://orcid.org/0000-0002-3686-7701"
 title: "PMFPredictor-Toolkit"
 version: 0.0.1
 date-released: 2022-09-08
 url: "https://github.com/ijrouse/PMFPredictor-Toolkit"
+preferred-citation:
+  type: article
+  authors:
+  - family-names: "Rouse"
+    given-names: "Ian"
+    orcid: "https://orcid.org/0000-0002-3686-7701"
+  - family-names: "Lobaskin"
+    given-names: "Vladimir"
+    orcid: "https://orcid.org/0000-0002-5231-0639"
+  doi: "10.48550/arXiv.2211.07999"
+  journal: "arXiv:2211.07999"
+  month: 11
+  start: 1 # First page number
+  end: 29 # Last page number
+  title: "Machine-learning based prediction of small molecule -- surface interaction potentials"
+  issue: 1
+  volume: 1
+  year: 2022
