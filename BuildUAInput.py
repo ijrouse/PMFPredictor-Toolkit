@@ -184,7 +184,7 @@ plt.rcParams.update({
     "text.usetex": True,
 })
 
-outputFolder=baseDir+"/surface_pmfp"
+outputFolder=baseDir+"/surface-pmfp"
 
 
 
@@ -217,7 +217,7 @@ knownMaterialFile.close()
     
 for material in materialDict:
     print("PMF Copy material: ", material)
-    os.makedirs(outputFolder+"/"+material+"_pmfp", exist_ok = True)
+    os.makedirs(outputFolder+"/"+material+"-pmfp", exist_ok = True)
     foundMaterial = False
     if material in materialDict:
         foundMaterial  = True
@@ -256,9 +256,9 @@ for material in materialDict:
             aminoAcid = uaTargets[ chem ]
             handle.write("{:<7}{:<10.3f}{:<14.3E}{:<10.3f}\n".format(aminoAcid, hamakerConstant / kT, hamakerConstant, hamakerConstant / kT / 0.4))
         handle.close()        
-        materialSetOutFile.write(material+",surface_pmfp/"+material+",hamaker-pmfp/"+material+"-PFMP.dat,"+str(shapeVal)+"\n")            
+        materialSetOutFile.write(material+"-pmfp,surface-pmfp/"+material+"-pmfp,hamaker-pmfp/"+material+"-PFMP.dat,"+str(shapeVal)+"\n")            
     else:         
-        materialSetOutFile.write(material+",surface_pmfp/"+material+",hamaker-pmfp/Null-PFMP.dat,"+str(shapeVal)+"\n")
+        materialSetOutFile.write(material+"-pmfp,surface-pmfp/"+material+"-pmfp,hamaker-pmfp/Null-PFMP.dat,"+str(shapeVal)+"\n")
     #Produce linear-average HIS PMFs from HID, HIE and HIP to use when the protein isn't being manually propka'd.
     hipPMF = np.genfromtxt( basePath+"/"+material+"_simple/HIPSCA-AC.dat",delimiter="," )
     hiePMF = np.genfromtxt( basePath+"/"+material+"_simple/HIESCA-AC.dat",delimiter="," )
@@ -270,12 +270,12 @@ for material in materialDict:
     hieInterp = interp1d( hiePMF[:,0],hiePMF[:,1])
     hidInterp = interp1d( hidPMF[:,0],hidPMF[:,1])
     hisPMF = np.stack( (rrange, hipFrac*hipInterp(rrange) + hieFrac*hieInterp(rrange) + hidFrac*hidInterp(rrange) ),axis=-1)
-    np.savetxt(outputFolder+"/"+material+"_pmfp/HIS.dat" ,hisPMF,fmt='%.18f' ,delimiter=",", header=material+"_HIS: "+hisString+"\nh[nm],U(h)[kJ/mol]")
+    np.savetxt(outputFolder+"/"+material+"-pmfp/HIS.dat" ,hisPMF,fmt='%.18f' ,delimiter=",", header=material+"_HIS: "+hisString+"\nh[nm],U(h)[kJ/mol]")
     for chem in uaTargets:
         if uaTargets[chem]=="HIS":
             continue
         #print("copy: ",  basePath+"/"+material+"/"+chem+".dat", "to ", outputFolder+"/"+material+"_pmfp/"+uaTargets[chem]+".dat" )
-        shutil.copy2( basePath+"/"+material+"_simple/"+chem+".dat",  outputFolder+"/"+material+"_pmfp/"+uaTargets[chem]+".dat"  )
+        shutil.copy2( basePath+"/"+material+"_simple/"+chem+".dat",  outputFolder+"/"+material+"-pmfp/"+uaTargets[chem]+".dat"  )
     
     
 quit()
