@@ -7,6 +7,32 @@ import HGEFuncs
 import shutil
 from scipy.interpolate import interp1d
 
+#Build a lookup table to get UA three-letter code from the full name. First load in any pre-defined ones.
+uaTargetFile = np.genfromtxt("UABindings.csv",dtype=str)
+uaTargets = {}
+for uaTarget in uaTargetFile
+    uaTargets[ uaTarget[0] ] = uaTargets[ uaTarget[1] ]
+    
+
+#Next automatically generate tags for any missing chemicals
+
+
+#Write out the null Hamaker file for use as a default
+makeHamaker == True:
+if makeHamaker == True:
+    os.makedirs("hamaker-pmfp",exist_ok=True")
+    handle = open('hamaker-pmfp/Null-PFMP.dat', 'w')
+    print("#{:<6}{:<10}{:<14}{:<10}".format("Name", "kT", "Joules", "kJ/mol"))   
+    handle.write("#{:<6}{:<10}{:<14}{:<10}\n".format("Name", "kT", "Joules", "kJ/mol"))
+    for chem in uaTargets:
+        hamakerConstant = 0
+        kT = 1
+        aminoAcid = uaTargets[ chem ]
+        handle.write("{:<7}{:<10.3f}{:<14.3E}{:<10.3f}\n".format(aminoAcid, 0 / kT, 0, 0 / kT / 0.4))
+    handle.close()
+
+
+
 
 basePath = "predicted_avg_pmfs/PMFPredictor-oct13-simplesplit-bootstrapped-ensemble1_canonical/UA"
 matchPath = "predicted_avg_pmfs/PMFPredictor-oct13-simplesplit-bootstrapped-ensemble1_matched/UA"
@@ -69,7 +95,7 @@ for material in materialSet:
     if foundMaterial == True:
         if materialDict[material] == "cylinder":
             shapeVal = 4
-    materialSetOutFile.write(material+","+outputFolder+"/"+material+",hamaker/Null.dat,"+str(shapeVal)+"\n")
+    materialSetOutFile.write(material+","+outputFolder+"/"+material+",hamaker/Null-PFMP.dat,"+str(shapeVal)+"\n")
     #Produce linear-average HIS PMFs from HID, HIE and HIP to use when the protein isn't being manually propka'd.
     hipPMF = np.genfromtxt( basePath+"/"+material+"/HIP.dat",delimiter="," )
     hiePMF = np.genfromtxt( basePath+"/"+material+"/HIE.dat",delimiter="," )

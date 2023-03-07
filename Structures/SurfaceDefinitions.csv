@@ -58,3 +58,11 @@ Cu110,plane,2,2,0.00021
 Cu111,plane,2,2,0.00025
 C-amorph-3,plane,1,2,0.002
 mos2-001,plane,1,0,0.002
+ZnO1m210BOND,plane,1,0,0.002
+ZnO1m210NB,plane,1,0,0.002
+ZnO1m210NBDry,plane,1,0,0.002
+ZnO10m10BOND,plane,1,0,0.002
+ZnO10m10NB,plane,1,0,0.002
+ZnO10m10NBDry,plane,1,0,0.002
+Ag322,plane,1,0,0.002
+Ag332,plane,1,0,0.002

@@ -209,3 +209,6 @@ HUMICACID-ANION-AC,[O-]C(=O)[C@]1(N(=O)=O)[C@H]2C[C@@H]([C@H]1C(=O)[O-])C=C2,-2,
 TANNIC-ARM-NEUTRAL-AC,C(=O)(c1cc(c(c(c1)O)O)O)O,0,Tannic acid arm neutral bead
 TANNIC-ARM-ANION-AC,c1c(c(c(cc1C(=O)[O-])O)O)O,-1,Tannic acid arm anion bead
 TANNIC-CENTRAL-AC,C([C@@H]1[C@H]([C@@H]([C@H]([C@H](O)O1)O)O)O)O,0,Tannic acid central bead
+ALANINEZWITTER,C[C@@H](C(=O)[O-])[NH3+],0,Zwitterionic alanine
+SERINEZWITTER,C([C@@H](C(=O)[O-])[NH3+])O,0,Zwitterionic serine
+HISTIDINEZWITTER,O=C([C@H](CC1=CNC=N1)[NH3+])[O-],0,Zwitterionic histidine
